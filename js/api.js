@@ -19,77 +19,91 @@ class StalkerAPI {
         };
     }
 
-    // Make API request
+    // Make API request - enhanced for different portal structures
     async apiRequest(endpoint, params = {}) {
         const session = this.auth.getSession();
         if (!session) {
             throw new Error('No active session');
         }
 
-        // Build URL with parameters
-        const url = new URL(session.portalUrl + endpoint);
-        Object.keys(params).forEach(key => {
-            url.searchParams.append(key, params[key]);
-        });
+        // Try different endpoint patterns based on portal structure
+        const endpointPatterns = [
+            // Standard Stalker v1 API
+            `stalker_portal/api/v1/${endpoint}`,
+            // Alternative API structures
+            `stalker_portal/api/${endpoint}`,
+            `api/v1/${endpoint}`,
+            `api/${endpoint}`,
+            // Direct endpoint (for non-standard portals)
+            endpoint,
+            // PHP-based endpoints
+            `server/load.php?type=stb&action=${endpoint}`,
+            `portal.php?type=${endpoint}`
+        ];
 
-        const startTime = performance.now();
-        const headers = this.getHeaders();
+        let lastError;
+        for (const endpointPattern of endpointPatterns) {
+            try {
+                const url = new URL(session.portalUrl + endpointPattern);
+                Object.keys(params).forEach(key => {
+                    url.searchParams.append(key, params[key]);
+                });
 
-        try {
-            const response = await fetch(url.toString(), {
-                method: 'GET',
-                headers: headers,
-                mode: 'cors'
-            });
+                const startTime = performance.now();
+                const headers = this.getHeaders();
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+                const response = await fetch(url.toString(), {
+                    method: 'GET',
+                    headers: headers,
+                    mode: 'cors'
+                });
 
-            const data = await response.json();
-            const duration = Math.round(performance.now() - startTime);
-            
-            // Track API request for diagnostics
-            if (window.diagnostics) {
-                window.diagnostics.trackApiRequest(
-                    url.toString(),
-                    'GET',
-                    headers,
-                    params,
-                    data,
-                    null,
-                    duration
-                );
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const duration = Math.round(performance.now() - startTime);
+                
+                // Track API request for diagnostics
+                if (window.diagnostics) {
+                    window.diagnostics.trackApiRequest(
+                        url.toString(),
+                        'GET',
+                        headers,
+                        params,
+                        data,
+                        null,
+                        duration
+                    );
+                }
+                
+                if (data.js) {
+                    return data.js;
+                } else {
+                    return data;
+                }
+            } catch (error) {
+                lastError = error;
+                console.log(`API endpoint pattern failed: ${endpointPattern} - ${error.message}`);
+                continue;
             }
-            
-            if (data.js) {
-                return data.js;
-            } else {
-                return data;
-            }
-        } catch (error) {
-            const duration = Math.round(performance.now() - startTime);
-            
-            // Track failed API request for diagnostics
-            if (window.diagnostics) {
-                window.diagnostics.trackApiRequest(
-                    url.toString(),
-                    'GET',
-                    headers,
-                    params,
-                    null,
-                    error.message,
-                    duration
-                );
-            }
-            
-            console.error('API request error:', error);
-            if (error.message.includes('401') || error.message.includes('403')) {
-                // Token expired, logout user
-                this.auth.logout();
-            }
-            throw error;
         }
+
+        // If all patterns failed, track the error and throw
+        if (window.diagnostics) {
+            window.diagnostics.trackApiRequest(
+                session.portalUrl + endpoint,
+                'GET',
+                this.getHeaders(),
+                params,
+                null,
+                lastError,
+                0
+            );
+        }
+        
+        throw new Error(`All API endpoint patterns failed for ${endpoint}: ${lastError.message}`);
     }
 
     // Get profile information
