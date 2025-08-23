@@ -97,7 +97,7 @@ class Auth {
         }
     }
 
-    // Normalize portal URL
+    // Normalize portal URL - flexible approach for different portal types
     normalizePortalUrl(url) {
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
             url = 'http://' + url;
@@ -107,26 +107,78 @@ class Auth {
             url += '/';
         }
         
-        if (!url.includes('/stalker_portal/api/')) {
-            if (url.endsWith('/')) {
-                url += 'stalker_portal/api/v1/';
-            } else {
-                url += '/stalker_portal/api/v1/';
-            }
-        }
-        
+        // Don't force stalker_portal path - many portals use different structures
+        // This will be handled in the handshake discovery process
         return url;
     }
 
     // Perform handshake with Stalker portal with comprehensive CORS bypass strategies
     async performHandshake(portalUrl, macAddress) {
-        const handshakeUrl = `${portalUrl}handshake`;
+        console.log(`Starting authentication with ${portalUrl} using MAC: ${macAddress}`);
         
-        console.log(`Starting authentication with ${handshakeUrl} using MAC: ${macAddress}`);
+        // Try multiple common Stalker portal endpoint patterns
+        const handshakeEndpoints = [
+            'stalker_portal/api/v1/handshake',  // Standard v1 API
+            'stalker_portal/api/handshake',     // API without version
+            'stalker_portal/handshake',         // Direct portal handshake
+            'portal.php?action=handshake',      // PHP-based portal
+            'server/load.php?action=handshake', // Alternative PHP portal
+            'api/v1/handshake',                 // Direct API v1
+            'api/handshake',                    // Direct API
+            'handshake'                         // Minimal endpoint
+        ];
         
-        // Strategy 1: Try standard fetch with enhanced headers (VU IPTV compatible)
+        for (let i = 0; i < handshakeEndpoints.length; i++) {
+            const handshakeUrl = `${portalUrl}${handshakeEndpoints[i]}`;
+            console.log(`Trying handshake endpoint ${i + 1}/${handshakeEndpoints.length}: ${handshakeUrl}`);
+            
+            // Strategy 1: Try standard fetch with enhanced headers (VU IPTV compatible)
+            try {
+                const result = await this.performStandardHandshake(handshakeUrl, macAddress);
+                console.log('✓ Standard authentication successful');
+                return result;
+            } catch (error) {
+                console.log('✗ Standard handshake failed:', error.message);
+                
+                // Strategy 2: Try with different parameter formats
+                try {
+                    const result = await this.performParameterVariantHandshake(handshakeUrl, macAddress);
+                    console.log('✓ Parameter variant authentication successful');
+                    return result;
+                } catch (paramError) {
+                    console.log('✗ Parameter variant handshake failed:', paramError.message);
+                }
+                
+                // Strategy 3: Try proxy mode if available
+                try {
+                    const result = await this.performProxyHandshake(handshakeUrl, macAddress);
+                    console.log('✓ Proxy authentication successful');
+                    return result;
+                } catch (proxyError) {
+                    console.log('✗ Proxy handshake failed:', proxyError.message);
+                }
+                
+                // Strategy 4: Try no-cors with form submission
+                try {
+                    const result = await this.performFormHandshake(handshakeUrl, macAddress);
+                    console.log('✓ Form submission authentication successful');
+                    return result;
+                } catch (formError) {
+                    console.log('✗ Form handshake failed:', formError.message);
+                }
+                
+                // Continue to next endpoint
+                console.log(`All strategies failed for endpoint: ${handshakeUrl}`);
+            }
+        }
+        
+        // If all endpoints fail, try the legacy approach with comprehensive strategies
+        const legacyHandshakeUrl = `${portalUrl}handshake`;
+        console.log('Trying legacy approach with comprehensive CORS bypass strategies...');
+        
+        // Try the original comprehensive CORS bypass strategies
         try {
-            const result = await this.performStandardHandshake(handshakeUrl, macAddress);
+            const result = await this.performStandardHandshake(legacyHandshakeUrl, macAddress);
             console.log('✓ Standard authentication successful');
             return result;
         } catch (error) {
@@ -146,7 +198,7 @@ class Auth {
             
             // Strategy 3: Try JSONP callback method
             try {
-                const result = await this.performJSONPHandshake(handshakeUrl, macAddress);
+                const result = await this.performJSONPHandshake(legacyHandshakeUrl, macAddress);
                 console.log('✓ JSONP authentication successful');
                 return result;
             } catch (jsonpError) {
@@ -188,7 +240,7 @@ class Auth {
             
             // Strategy 7: Try proxy mode if available
             try {
-                const result = await this.performProxyHandshake(handshakeUrl, macAddress);
+                const result = await this.performProxyHandshake(legacyHandshakeUrl, macAddress);
                 console.log('✓ Proxy authentication successful');
                 return result;
             } catch (proxyError) {
@@ -197,7 +249,7 @@ class Auth {
             
             // Strategy 8: Try no-cors with opaque response detection
             try {
-                const result = await this.performNoCorsHandshake(handshakeUrl, macAddress);
+                const result = await this.performNoCorsHandshake(legacyHandshakeUrl, macAddress);
                 console.log('✓ No-CORS authentication successful');
                 return result;
             } catch (noCorsError) {
@@ -510,6 +562,94 @@ This portal may require:
             document.body.appendChild(form);
             form.submit();
         });
+    }
+
+    // Parameter variant handshake - try different parameter formats
+    async performParameterVariantHandshake(handshakeUrl, macAddress) {
+        const parameterVariants = [
+            // Standard Stalker parameters
+            { mac: macAddress, stb_lang: 'en', timezone: 'Europe/Kiev' },
+            // Alternative parameter names
+            { mac_address: macAddress, language: 'en', tz: 'Europe/Kiev' },
+            // Query string format
+            '',  // Will be handled as query string
+            // Form data format - handled by different method
+        ];
+
+        for (let i = 0; i < parameterVariants.length - 1; i++) {
+            try {
+                const params = parameterVariants[i];
+                let requestUrl = handshakeUrl;
+                
+                if (i === 2) {
+                    // Query string format
+                    const queryParams = new URLSearchParams({
+                        mac: macAddress,
+                        stb_lang: 'en',
+                        timezone: 'Europe/Kiev'
+                    });
+                    requestUrl = `${handshakeUrl}?${queryParams.toString()}`;
+                }
+
+                const headers = {
+                    'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
+                    'X-User-Agent': 'Model: MAG250; Link: WiFi',
+                    'Cookie': `mac=${macAddress}; stb_lang=en; timezone=Europe/Kiev;`,
+                    'Accept': 'application/json, text/javascript, */*; q=0.01',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Referer': handshakeUrl.split('/stalker_portal')[0] + '/' || handshakeUrl.split('/api')[0] + '/' || handshakeUrl.split('?')[0]
+                };
+
+                let response;
+                if (i === 2) {
+                    // GET with query string
+                    response = await fetch(requestUrl, {
+                        method: 'GET',
+                        headers: headers,
+                        mode: 'cors',
+                        credentials: 'include'
+                    });
+                } else {
+                    // POST with form data
+                    const formData = new FormData();
+                    Object.keys(params).forEach(key => {
+                        formData.append(key, params[key]);
+                    });
+
+                    response = await fetch(requestUrl, {
+                        method: 'POST',
+                        headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams(params).toString(),
+                        mode: 'cors',
+                        credentials: 'include'
+                    });
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.js && data.js.token) {
+                    return {
+                        token: data.js.token,
+                        token_expire: data.js.token_expire,
+                        profile: data.js.profile || {}
+                    };
+                }
+            } catch (error) {
+                console.log(`Parameter variant ${i + 1} failed:`, error.message);
+                continue;
+            }
+        }
+        
+        throw new Error('All parameter variants failed');
+    }
+
+    // Form handshake - direct form submission approach
+    async performFormHandshake(handshakeUrl, macAddress) {
+        return this.performFormSubmitHandshake(handshakeUrl, macAddress);
     }
 
     // Logout user

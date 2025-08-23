@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Connection Test</title>
+</head>
+<body>
+    <h1>Portal Connection Test</h1>
+    <div id="log"></div>
+    
+    <script>
+        const logDiv = document.getElementById('log');
+        
+        function log(message) {
+            console.log(message);
+            logDiv.innerHTML += message + '<br>';
+        }
+        
+        // Test basic portal connectivity
+        async function testPortal(url, mac) {
+            log(`Testing portal: ${url} with MAC: ${mac}`);
+            
+            const testEndpoints = [
+                url + 'stalker_portal/api/v1/handshake',
+                url + 'stalker_portal/api/handshake', 
+                url + 'stalker_portal/handshake',
+                url + 'api/v1/handshake',
+                url + 'api/handshake',
+                url + 'handshake',
+                url + 'server/load.php?action=handshake',
+                url + 'portal.php?action=handshake'
+            ];
+            
+            for (const endpoint of testEndpoints) {
+                try {
+                    log(`Trying: ${endpoint}`);
+                    
+                    const response = await fetch(endpoint, {
+                        method: 'GET',
+                        mode: 'no-cors',
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
+                            'Cookie': `mac=${mac}; stb_lang=en; timezone=Europe/Kiev;`
+                        }
+                    });
+                    
+                    log(`Response type: ${response.type}, Status: ${response.status || 'unknown'}`);
+                    
+                    if (response.type === 'opaque') {
+                        log(`✓ Endpoint reachable (opaque response): ${endpoint}`);
+                        
+                        // Try CORS mode to see if we can read response
+                        try {
+                            const corsResponse = await fetch(endpoint, {
+                                method: 'GET',
+                                mode: 'cors',
+                                headers: {
+                                    'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
+                                    'Cookie': `mac=${mac}; stb_lang=en; timezone=Europe/Kiev;`
+                                }
+                            });
+                            
+                            if (corsResponse.ok) {
+                                const data = await corsResponse.json();
+                                log(`✓ Success! CORS response: ${JSON.stringify(data)}`);
+                                return data;
+                            }
+                        } catch (corsError) {
+                            log(`CORS blocked: ${corsError.message}`);
+                        }
+                    }
+                    
+                } catch (error) {
+                    log(`Failed: ${error.message}`);
+                }
+            }
+            
+            log('All endpoints failed');
+            return null;
+        }
+        
+        // Test all portals
+        async function testAllPortals() {
+            const portals = [
+                'http://play.b4u.live/',
+                'http://glotv.me/',
+                'http://play.suntv.biz/'
+            ];
+            
+            const mac = 'AA:7A:10:57:C1:00';
+            
+            for (const portal of portals) {
+                await testPortal(portal, mac);
+                log('---');
+            }
+        }
+        
+        // Start test
+        testAllPortals();
+    </script>
+</body>
+</html>
