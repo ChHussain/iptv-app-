@@ -699,6 +699,97 @@ This portal may require:
         return true;
     }
 
+    // Enhanced WebRTC authentication method
+    async performWebRTCHandshake(portalUrl, macAddress) {
+        if (window.WebRTCPortalConnection) {
+            const webrtc = new window.WebRTCPortalConnection();
+            return await webrtc.createDirectConnection(portalUrl, macAddress);
+        } else {
+            throw new Error('WebRTC not available');
+        }
+    }
+
+    // Enhanced SSE authentication method
+    async performSSEHandshake(portalUrl, macAddress) {
+        if (window.WebRTCPortalConnection) {
+            const webrtc = new window.WebRTCPortalConnection();
+            return await webrtc.createSSEConnection(portalUrl, macAddress);
+        } else {
+            throw new Error('SSE not available');
+        }
+    }
+
+    // Enhanced WebSocket authentication method
+    async performWebSocketHandshake(portalUrl, macAddress) {
+        if (window.WebRTCPortalConnection) {
+            const webrtc = new window.WebRTCPortalConnection();
+            return await webrtc.createWebSocketConnection(portalUrl, macAddress);
+        } else {
+            throw new Error('WebSocket not available');
+        }
+    }
+
+    // Generate comprehensive error report for debugging
+    generateErrorReport(attemptLog, portalUrl, macAddress) {
+        const totalAttempts = attemptLog.length;
+        const uniqueErrors = [...new Set(attemptLog.map(a => a.error))];
+        const strategiesTried = [...new Set(attemptLog.map(a => a.strategy))];
+        
+        // Analyze error patterns
+        const corsErrors = attemptLog.filter(a => 
+            a.error.toLowerCase().includes('cors') || 
+            a.error.toLowerCase().includes('blocked') ||
+            a.error.toLowerCase().includes('origin')
+        ).length;
+        
+        const networkErrors = attemptLog.filter(a => 
+            a.error.toLowerCase().includes('network') || 
+            a.error.toLowerCase().includes('timeout') ||
+            a.error.toLowerCase().includes('unreachable')
+        ).length;
+        
+        const authErrors = attemptLog.filter(a => 
+            a.error.toLowerCase().includes('token') || 
+            a.error.toLowerCase().includes('auth') ||
+            a.error.toLowerCase().includes('unauthorized')
+        ).length;
+
+        let primaryIssue = 'Unknown';
+        let recommendation = '';
+        
+        if (corsErrors > totalAttempts * 0.5) {
+            primaryIssue = 'CORS Security Restrictions';
+            recommendation = 'Portal blocks browser connections. Use Electron app or Smart TV deployment.';
+        } else if (networkErrors > totalAttempts * 0.5) {
+            primaryIssue = 'Network Connectivity';
+            recommendation = 'Check portal URL and internet connection.';
+        } else if (authErrors > 0) {
+            primaryIssue = 'Authentication Issues';
+            recommendation = 'Verify MAC address and portal credentials.';
+        }
+
+        const report = {
+            summary: {
+                portalUrl,
+                macAddress,
+                totalAttempts,
+                strategiesTried: strategiesTried.length,
+                primaryIssue,
+                recommendation
+            },
+            analysis: {
+                corsErrors,
+                networkErrors,
+                authErrors,
+                uniqueErrors: uniqueErrors.length
+            },
+            attempts: attemptLog,
+            userMessage: `Authentication failed: ${primaryIssue}. ${recommendation} (${totalAttempts} attempts made)`
+        };
+
+        return report;
+    }
+
     // Protect page - redirect to login if not authenticated
     protectPage() {
         if (!this.isAuthenticated()) {

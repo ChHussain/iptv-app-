@@ -6,47 +6,141 @@ class WebRTCPortalConnection {
         this.signalingServer = null;
     }
 
-    // Create WebRTC data channel for direct portal communication
+    // Utility method to normalize portal URLs
+    normalizePortalUrl(url) {
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'http://' + url;
+        }
+        if (!url.endsWith('/')) {
+            url += '/';
+        }
+        return url;
+    }
+
+    // Cleanup method for connections
+    cleanup(connectionId) {
+        const connection = this.connections.get(connectionId);
+        if (connection) {
+            try {
+                if (connection.dataChannel) {
+                    connection.dataChannel.close();
+                }
+                if (connection.pc) {
+                    connection.pc.close();
+                }
+            } catch (e) {
+                console.warn('Error during WebRTC cleanup:', e);
+            }
+            this.connections.delete(connectionId);
+        }
+    }
+
+    // Create WebRTC data channel for direct portal communication with enhanced fallbacks
     async createDirectConnection(portalUrl, macAddress) {
         try {
-            const connectionId = `portal_${Date.now()}`;
+            console.log('🔗 Attempting WebRTC direct connection to portal...');
             
-            // Create RTCPeerConnection with ICE servers
+            // Enhanced ICE servers for better connectivity
+            const iceServers = [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' }
+            ];
+
             const pc = new RTCPeerConnection({
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                ]
+                iceServers: iceServers,
+                iceCandidatePoolSize: 10,
+                bundlePolicy: 'max-bundle',
+                rtcpMuxPolicy: 'require'
             });
 
-            // Create data channel for portal communication
-            const dataChannel = pc.createDataChannel('portal', {
+            // Enhanced data channel configuration
+            const dataChannel = pc.createDataChannel('iptv-portal', {
                 ordered: true,
-                maxRetransmits: 3
+                maxRetransmits: 5,
+                maxPacketLifeTime: 30000
             });
+
+            // Store connection for cleanup
+            const connectionId = `portal_${Date.now()}`;
+            this.connections.set(connectionId, { pc, dataChannel });
 
             return new Promise((resolve, reject) => {
+                let resolved = false;
                 const timeout = setTimeout(() => {
-                    reject(new Error('WebRTC connection timeout'));
-                }, 15000);
+                    if (!resolved) {
+                        resolved = true;
+                        this.cleanup(connectionId);
+                        reject(new Error('WebRTC connection timeout - portal may not support direct connections'));
+                    }
+                }, 20000);
+
+                const cleanup = () => {
+                    clearTimeout(timeout);
+                    this.cleanup(connectionId);
+                };
+
+                // Enhanced connection state monitoring
+                pc.onconnectionstatechange = () => {
+                    console.log(`WebRTC connection state: ${pc.connectionState}`);
+                    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                        if (!resolved) {
+                            resolved = true;
+                            cleanup();
+                            reject(new Error('WebRTC connection failed - trying alternative methods'));
+                        }
+                    }
+                };
+
+                pc.onicegatheringstatechange = () => {
+                    console.log(`ICE gathering state: ${pc.iceGatheringState}`);
+                };
 
                 dataChannel.onopen = () => {
-                    clearTimeout(timeout);
-                    console.log('WebRTC data channel opened for portal communication');
+                    if (resolved) return;
+                    console.log('✓ WebRTC data channel opened for portal communication');
                     
-                    // Send handshake request through data channel
-                    const handshakeData = {
-                        type: 'handshake',
-                        url: portalUrl,
-                        macAddress: macAddress,
-                        userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
-                        headers: {
-                            'X-User-Agent': 'Model: MAG250; Link: WiFi',
-                            'Cookie': `mac=${macAddress}; stb_lang=en; timezone=Europe/Kiev;`
+                    // Enhanced handshake data with multiple portal formats
+                    const handshakeRequests = [
+                        {
+                            type: 'stalker_handshake',
+                            method: 'GET',
+                            url: this.normalizePortalUrl(portalUrl) + 'stalker_portal/api/v1/handshake',
+                            macAddress: macAddress,
+                            userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG250 stbapp ver: 2 rev: 250 Safari/533.3',
+                            headers: {
+                                'X-User-Agent': `Model: MAG250; Link: WiFi; MAC: ${macAddress}`,
+                                'Cookie': `mac=${macAddress}; stb_lang=en; timezone=Europe/Kiev;`,
+                                'Accept': 'application/json, text/javascript, */*; q=0.01',
+                                'Accept-Language': 'en-US,en;q=0.5',
+                                'Cache-Control': 'no-cache',
+                                'Referer': this.normalizePortalUrl(portalUrl)
+                            }
+                        },
+                        {
+                            type: 'alternative_handshake',
+                            method: 'POST',
+                            url: this.normalizePortalUrl(portalUrl) + 'portal.php',
+                            macAddress: macAddress,
+                            formData: `action=handshake&type=stb&mac=${macAddress}&stb_lang=en&timezone=Europe/Kiev`,
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'User-Agent': 'VuPlusIPTVPlayer/1.0'
+                            }
                         }
-                    };
+                    ];
                     
-                    dataChannel.send(JSON.stringify(handshakeData));
+                    // Try each handshake format
+                    handshakeRequests.forEach((request, index) => {
+                        setTimeout(() => {
+                            if (!resolved && dataChannel.readyState === 'open') {
+                                console.log(`Sending handshake attempt ${index + 1}:`, request.type);
+                                dataChannel.send(JSON.stringify(request));
+                            }
+                        }, index * 1000);
+                    });
                 };
 
                 dataChannel.onmessage = (event) => {

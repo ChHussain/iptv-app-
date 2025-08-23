@@ -180,47 +180,22 @@ class CORSProxyHandler(http.server.SimpleHTTPRequestHandler):
             print(f"Proxying request to: {target_url}")
             print(f"MAC Address: {mac_address}")
             
-            # Create the request
-            req = urllib.request.Request(target_url)
+            # Enhanced portal authentication with multiple endpoint attempts
+            success, response_data = self.attempt_portal_authentication(target_url, mac_address, headers)
             
-            # Add headers
-            for key, value in headers.items():
-                req.add_header(key, value)
-            
-            # Make the request
-            try:
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    response_data = response.read().decode('utf-8')
-                    
-                    # Send successful response
-                    self.send_response(200)
-                    self.send_header('Content-Type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(response_data.encode('utf-8'))
-                    
-                    print(f"Successfully proxied request - Response length: {len(response_data)}")
-                    
-            except HTTPError as e:
-                print(f"HTTP Error: {e.code} - {e.reason}")
-                self.send_response(e.code)
+            if success:
+                # Send successful response
+                self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                error_response = json.dumps({
-                    'error': f'HTTP {e.code}: {e.reason}',
-                    'code': e.code
-                })
-                self.wfile.write(error_response.encode('utf-8'))
-                
-            except URLError as e:
-                print(f"URL Error: {e.reason}")
+                self.wfile.write(response_data.encode('utf-8'))
+                print(f"Successfully authenticated with portal - Response length: {len(response_data)}")
+            else:
+                # Send error response
                 self.send_response(502)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                error_response = json.dumps({
-                    'error': f'Connection failed: {e.reason}',
-                    'code': 502
-                })
-                self.wfile.write(error_response.encode('utf-8'))
+                self.wfile.write(response_data.encode('utf-8'))
                 
         except Exception as e:
             print(f"Proxy error: {e}")
@@ -232,6 +207,142 @@ class CORSProxyHandler(http.server.SimpleHTTPRequestHandler):
                 'code': 500
             })
             self.wfile.write(error_response.encode('utf-8'))
+
+    def attempt_portal_authentication(self, target_url, mac_address, headers):
+        """
+        Enhanced portal authentication with multiple endpoint and method attempts
+        Returns (success: bool, response_data: str)
+        """
+        # Parse base URL from target
+        base_url = target_url.split('/stalker_portal')[0] if '/stalker_portal' in target_url else target_url.rstrip('/')
+        
+        # Try multiple common IPTV portal endpoint patterns
+        endpoint_patterns = [
+            target_url,  # Original URL first
+            f"{base_url}/stalker_portal/api/v1/handshake",
+            f"{base_url}/stalker_portal/api/handshake", 
+            f"{base_url}/stalker_portal/handshake",
+            f"{base_url}/portal.php?action=handshake&type=stb",
+            f"{base_url}/server/load.php?action=handshake&type=stb",
+            f"{base_url}/api/v1/handshake",
+            f"{base_url}/api/handshake",
+            f"{base_url}/handshake.php",
+            f"{base_url}/handshake"
+        ]
+        
+        # Enhanced headers with multiple user agent variants
+        user_agents = [
+            'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
+            'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG250 stbapp ver: 2 rev: 250 Safari/533.3',
+            'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG254 stbapp ver: 2 rev: 250 Safari/533.3',
+            'Mozilla/5.0 (SmartHub; SMART-TV; U; Linux/SmartTV+2013) AppleWebKit/537.42+ (KHTML, like Gecko) Maple_2012 Safari/537.42+',
+            'VuPlusIPTVPlayer/1.0'
+        ]
+        
+        for endpoint_url in endpoint_patterns:
+            print(f"Trying endpoint: {endpoint_url}")
+            
+            for user_agent in user_agents:
+                try:
+                    # Create request with enhanced headers
+                    req = urllib.request.Request(endpoint_url)
+                    
+                    # Set enhanced headers
+                    req.add_header('User-Agent', user_agent)
+                    req.add_header('X-User-Agent', f'Model: MAG250; Link: WiFi; MAC: {mac_address}')
+                    req.add_header('Cookie', f'mac={mac_address}; stb_lang=en; timezone=Europe/Kiev;')
+                    req.add_header('Accept', 'application/json, text/javascript, */*; q=0.01')
+                    req.add_header('Accept-Language', 'en-US,en;q=0.5')
+                    req.add_header('Accept-Encoding', 'gzip, deflate')
+                    req.add_header('Connection', 'keep-alive')
+                    req.add_header('Cache-Control', 'no-cache')
+                    req.add_header('Pragma', 'no-cache')
+                    
+                    # Add referrer based on portal URL
+                    referer = base_url + '/'
+                    req.add_header('Referer', referer)
+                    
+                    # Add custom headers from request
+                    for key, value in headers.items():
+                        if key.lower() not in ['user-agent', 'x-user-agent', 'cookie']:
+                            req.add_header(key, value)
+                    
+                    # Try both GET and POST methods
+                    for method in ['GET', 'POST']:
+                        try:
+                            if method == 'POST':
+                                # For POST, try with form data
+                                post_data = f'mac={mac_address}&stb_lang=en&timezone=Europe/Kiev'
+                                req.data = post_data.encode('utf-8')
+                                req.add_header('Content-Type', 'application/x-www-form-urlencoded')
+                                req.add_header('Content-Length', str(len(post_data)))
+                            
+                            print(f"  Trying {method} with User-Agent: {user_agent[:50]}...")
+                            
+                            with urllib.request.urlopen(req, timeout=15) as response:
+                                response_data = response.read().decode('utf-8')
+                                
+                                # Try to parse as JSON
+                                try:
+                                    json_data = json.loads(response_data)
+                                    
+                                    # Check for valid authentication response
+                                    if self.is_valid_auth_response(json_data):
+                                        print(f"✓ Authentication successful with {endpoint_url} using {method}")
+                                        return True, response_data
+                                        
+                                except json.JSONDecodeError:
+                                    # Not JSON, but might be valid response
+                                    if 'token' in response_data.lower() or 'success' in response_data.lower():
+                                        print(f"✓ Non-JSON authentication response received from {endpoint_url}")
+                                        return True, response_data
+                            
+                        except HTTPError as e:
+                            if e.code == 404:
+                                continue  # Try next endpoint
+                            print(f"  HTTP {e.code}: {e.reason}")
+                            
+                        except URLError as e:
+                            print(f"  URL Error: {e.reason}")
+                            # Don't continue with same endpoint if URL is unreachable
+                            break
+                            
+                        except Exception as e:
+                            print(f"  Request failed: {str(e)}")
+                            continue
+                            
+                except Exception as e:
+                    print(f"  Failed to create request: {str(e)}")
+                    continue
+        
+        # All attempts failed
+        error_response = json.dumps({
+            'error': 'All portal authentication attempts failed. Portal may be unreachable or requires different authentication method.',
+            'code': 502,
+            'details': f'Tried {len(endpoint_patterns)} endpoints with {len(user_agents)} user agents each'
+        })
+        return False, error_response
+
+    def is_valid_auth_response(self, json_data):
+        """Check if JSON response contains valid authentication data"""
+        try:
+            # Standard Stalker portal response format
+            if isinstance(json_data, dict):
+                js_data = json_data.get('js', {})
+                if js_data and js_data.get('token'):
+                    return True
+                
+                # Alternative response formats
+                if json_data.get('token') or json_data.get('access_token'):
+                    return True
+                    
+                # Check for authentication success indicators
+                if json_data.get('status') == 'success' or json_data.get('result') == 'success':
+                    return True
+                    
+            return False
+        except:
+            return False
 
 class DualProtocolServer(socketserver.TCPServer):
     """Custom server that handles both HTTP and proxy requests"""
