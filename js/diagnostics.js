@@ -394,6 +394,8 @@ class DiagnosticsManager {
     // Get connection tab content
     getConnectionTabContent() {
         const status = this.connectionStatus;
+        const recentErrors = this.logs.filter(log => log.level === 'error').slice(-3);
+        
         return `
             <div class="status-grid">
                 <div class="status-item">
@@ -421,6 +423,26 @@ class DiagnosticsManager {
                     <span>${status.lastApiCall ? new Date(status.lastApiCall).toLocaleTimeString() : 'None'}</span>
                 </div>
             </div>
+            ${recentErrors.length > 0 ? `
+                <div class="connection-troubleshooting">
+                    <h4>🔍 Connection Issues:</h4>
+                    ${recentErrors.map(error => `
+                        <div class="error-analysis">
+                            <strong>${new Date(error.timestamp).toLocaleTimeString()}:</strong> ${error.message}
+                            ${error.data && error.data.error ? `<br><em>Details: ${error.data.error}</em>` : ''}
+                        </div>
+                    `).join('')}
+                    <div class="troubleshooting-tips">
+                        <h5>💡 Troubleshooting Tips:</h5>
+                        <ul>
+                            <li><strong>CORS/Failed to fetch:</strong> Portal doesn't allow browser connections. Use desktop app or check portal settings.</li>
+                            <li><strong>DNS errors:</strong> Check internet connection and portal URL spelling.</li>
+                            <li><strong>Connection refused:</strong> Portal server may be down or blocking connections.</li>
+                            <li><strong>Timeout:</strong> Portal server is slow or unreachable. Try again later.</li>
+                        </ul>
+                    </div>
+                </div>
+            ` : ''}
         `;
     }
 

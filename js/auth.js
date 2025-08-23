@@ -151,8 +151,21 @@ class Auth {
                 throw new Error('No token received from portal');
             }
         } catch (error) {
-            if (error.name === 'TypeError' && error.message.includes('CORS')) {
-                throw new Error('CORS error - Portal may not allow cross-origin requests from browser');
+            // Enhanced error handling for better diagnostics
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                throw new Error('CORS error - Portal may not allow cross-origin requests from browser, or portal is unreachable');
+            }
+            if (error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+                throw new Error('Request blocked by client (ad blocker or browser security)');
+            }
+            if (error.message.includes('ERR_NAME_NOT_RESOLVED')) {
+                throw new Error('Portal domain name could not be resolved (DNS error)');
+            }
+            if (error.message.includes('ERR_CONNECTION_REFUSED')) {
+                throw new Error('Portal refused connection (server may be down)');
+            }
+            if (error.message.includes('ERR_CONNECTION_TIMED_OUT')) {
+                throw new Error('Connection to portal timed out');
             }
             throw error;
         }
