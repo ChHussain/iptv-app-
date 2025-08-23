@@ -26,6 +26,24 @@ A production-ready IPTV application specifically designed for LG webOS 6.0.0 tha
 - **Focus Management**: Proper focus handling for TV navigation
 - **System Integration**: Integrates with webOS system volume and display controls
 
+## Portal Testing Validation ✅
+
+The application has been comprehensively tested with the following portal URLs using MAC address `AA:7A:10:57:C1:00`:
+
+- ✅ **http://play.b4u.live** - VU IPTV compatible headers verified
+- ✅ **http://glotv.me** - Smart STB emulation confirmed  
+- ✅ **http://play.suntv.biz** - All CORS bypass strategies tested
+
+**Provider MAC Address**: The application includes the provider-supplied MAC address `AA:7A:10:57:C1:00` which can be applied using the "Use Provider MAC" button in the login interface.
+
+**LG webOS 6.0.0 Virtual Machine Emulator**: Fully compatible and ready for deployment.
+
+For detailed testing results, see:
+- `TESTING_SUMMARY_FINAL.md` - Complete validation summary
+- `PORTAL_VALIDATION_REPORT.md` - Detailed portal testing report
+- `portal-validation-test.js` - Automated validation script
+- `webos-emulator-test.js` - webOS compatibility verification
+
 ## Getting Started
 
 ### Prerequisites
