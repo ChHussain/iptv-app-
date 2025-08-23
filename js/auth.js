@@ -333,7 +333,18 @@ This portal may require:
                 profile: data.js.profile || {}
             };
         } else {
-            throw new Error('No token received from portal');
+            // Check for specific error messages from the portal
+            let errorMessage = 'No token received from portal';
+            
+            if (data.js && data.js.error) {
+                errorMessage = data.js.error;
+            } else if (data.error) {
+                errorMessage = data.error;
+            } else if (data.js && data.js.message) {
+                errorMessage = data.js.message;
+            }
+            
+            throw new Error(errorMessage);
         }
     }
 
@@ -364,7 +375,18 @@ This portal may require:
                         profile: data.js.profile || {}
                     });
                 } else {
-                    reject(new Error('No token received from portal via JSONP'));
+                    // Check for specific error messages from the portal
+                    let errorMessage = 'No token received from portal via JSONP';
+                    
+                    if (data.js && data.js.error) {
+                        errorMessage = data.js.error;
+                    } else if (data.error) {
+                        errorMessage = data.error;
+                    } else if (data.js && data.js.message) {
+                        errorMessage = data.js.message;
+                    }
+                    
+                    reject(new Error(errorMessage));
                 }
             };
 
@@ -422,6 +444,19 @@ This portal may require:
                                 token_expire: data.js.token_expire,
                                 profile: data.js.profile || {}
                             };
+                        } else {
+                            // Check for specific error messages from the portal
+                            let errorMessage = `Alternative endpoint ${endpoint} returned no token`;
+                            
+                            if (data.js && data.js.error) {
+                                errorMessage = data.js.error;
+                            } else if (data.error) {
+                                errorMessage = data.error;
+                            } else if (data.js && data.js.message) {
+                                errorMessage = data.js.message;
+                            }
+                            
+                            throw new Error(errorMessage);
                         }
                     }
                 }
@@ -467,7 +502,18 @@ This portal may require:
                     profile: data.js.profile || {}
                 };
             } else {
-                throw new Error('No token received from portal via proxy');
+                // Check for specific error messages from the portal
+                let errorMessage = 'No token received from portal via proxy';
+                
+                if (data.js && data.js.error) {
+                    errorMessage = data.js.error;
+                } else if (data.error) {
+                    errorMessage = data.error;
+                } else if (data.js && data.js.message) {
+                    errorMessage = data.js.message;
+                }
+                
+                throw new Error(errorMessage);
             }
         } catch (error) {
             throw new Error(`Proxy method failed: ${error.message}`);
@@ -565,7 +611,18 @@ This portal may require:
                             profile: data.js.profile || {}
                         });
                     } else {
-                        reject(new Error('No token received from portal via form submission'));
+                        // Check for specific error messages from the portal
+                        let errorMessage = 'No token received from portal via form submission';
+                        
+                        if (data.js && data.js.error) {
+                            errorMessage = data.js.error;
+                        } else if (data.error) {
+                            errorMessage = data.error;
+                        } else if (data.js && data.js.message) {
+                            errorMessage = data.js.message;
+                        }
+                        
+                        reject(new Error(errorMessage));
                     }
                 } catch (error) {
                     cleanup();
@@ -658,6 +715,19 @@ This portal may require:
                         token_expire: data.js.token_expire,
                         profile: data.js.profile || {}
                     };
+                } else {
+                    // Check for specific error messages from the portal
+                    let errorMessage = `Parameter variant ${i + 1} returned no token`;
+                    
+                    if (data.js && data.js.error) {
+                        errorMessage = data.js.error;
+                    } else if (data.error) {
+                        errorMessage = data.error;
+                    } else if (data.js && data.js.message) {
+                        errorMessage = data.js.message;
+                    }
+                    
+                    throw new Error(errorMessage);
                 }
             } catch (error) {
                 console.log(`Parameter variant ${i + 1} failed:`, error.message);
