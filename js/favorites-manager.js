@@ -47,7 +47,7 @@ class FavoritesManager {
             name: item.name,
             type: type,
             addedDate: Date.now(),
-            portalUrl: window.auth.getSession()?.portalUrl || '',
+            portalUrl: (window.auth && window.auth.getSession && window.auth.getSession() && window.auth.getSession().portalUrl) ? window.auth.getSession().portalUrl : '',
             data: {
                 ...item,
                 // Store essential data for playback
@@ -81,7 +81,14 @@ class FavoritesManager {
             return false;
         }
 
-        const currentPortalUrl = portalUrl || window.auth.getSession()?.portalUrl || '';
+        var currentPortalUrl = portalUrl;
+        if (!currentPortalUrl) {
+            if (window.auth && window.auth.getSession && window.auth.getSession()) {
+                currentPortalUrl = window.auth.getSession().portalUrl || '';
+            } else {
+                currentPortalUrl = '';
+            }
+        }
         const index = this.favorites[type].findIndex(fav => 
             fav.id === itemId && fav.portalUrl === currentPortalUrl
         );
@@ -101,7 +108,14 @@ class FavoritesManager {
             return false;
         }
 
-        const currentPortalUrl = portalUrl || window.auth.getSession()?.portalUrl || '';
+        var currentPortalUrl = portalUrl;
+        if (!currentPortalUrl) {
+            if (window.auth && window.auth.getSession && window.auth.getSession()) {
+                currentPortalUrl = window.auth.getSession().portalUrl || '';
+            } else {
+                currentPortalUrl = '';
+            }
+        }
         return this.favorites[type].some(fav => 
             fav.id === itemId && fav.portalUrl === currentPortalUrl
         );
@@ -122,7 +136,14 @@ class FavoritesManager {
             return [];
         }
 
-        const currentPortalUrl = portalUrl || window.auth.getSession()?.portalUrl || '';
+        var currentPortalUrl = portalUrl;
+        if (!currentPortalUrl) {
+            if (window.auth && window.auth.getSession && window.auth.getSession()) {
+                currentPortalUrl = window.auth.getSession().portalUrl || '';
+            } else {
+                currentPortalUrl = '';
+            }
+        }
         
         if (currentPortalUrl) {
             return this.favorites[type]
@@ -206,10 +227,18 @@ class FavoritesManager {
 
     // Export favorites
     exportFavorites(portalUrl = null) {
-        const exportData = {
+        var exportPortalUrl = portalUrl;
+        if (!exportPortalUrl) {
+            if (window.auth && window.auth.getSession && window.auth.getSession()) {
+                exportPortalUrl = window.auth.getSession().portalUrl || 'all';
+            } else {
+                exportPortalUrl = 'all';
+            }
+        }
+        var exportData = {
             version: '1.0',
             exportDate: new Date().toISOString(),
-            portalUrl: portalUrl || window.auth.getSession()?.portalUrl || 'all',
+            portalUrl: exportPortalUrl,
             favorites: portalUrl ? this.getAllFavorites(portalUrl) : this.favorites
         };
 
@@ -271,7 +300,14 @@ class FavoritesManager {
 
     // Get favorite item by ID and type
     getFavoriteById(type, itemId, portalUrl = null) {
-        const currentPortalUrl = portalUrl || window.auth.getSession()?.portalUrl || '';
+        var currentPortalUrl = portalUrl;
+        if (!currentPortalUrl) {
+            if (window.auth && window.auth.getSession && window.auth.getSession()) {
+                currentPortalUrl = window.auth.getSession().portalUrl || '';
+            } else {
+                currentPortalUrl = '';
+            }
+        }
         
         if (!this.favorites[type]) {
             return null;
