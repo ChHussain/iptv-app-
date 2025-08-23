@@ -196,63 +196,7 @@ class PortalManager {
         );
     }
 
-    // Export portals (for backup)
-    exportPortals() {
-        const exportData = {
-            version: '1.0',
-            exportDate: new Date().toISOString(),
-            portals: this.portals.map(portal => ({
-                ...portal,
-                // Don't export sensitive data in plain text
-                password: portal.password ? '[ENCRYPTED]' : ''
-            }))
-        };
-        return JSON.stringify(exportData, null, 2);
-    }
 
-    // Import portals (from backup)
-    importPortals(jsonData) {
-        try {
-            const importData = JSON.parse(jsonData);
-            
-            if (!importData.portals || !Array.isArray(importData.portals)) {
-                throw new Error('Invalid import data format');
-            }
-
-            let importedCount = 0;
-            let skippedCount = 0;
-
-            importData.portals.forEach(portalData => {
-                // Skip if portal already exists
-                const exists = this.portals.some(p => 
-                    p.url === portalData.url && p.macAddress === portalData.macAddress
-                );
-
-                if (!exists) {
-                    // Generate new ID and reset some fields
-                    const portal = {
-                        ...portalData,
-                        id: this.generatePortalId(),
-                        addedDate: Date.now(),
-                        lastUsed: null,
-                        isActive: false,
-                        password: '' // Clear password as it was not exported
-                    };
-                    this.portals.push(portal);
-                    importedCount++;
-                } else {
-                    skippedCount++;
-                }
-            });
-
-            this.savePortals();
-            return { imported: importedCount, skipped: skippedCount };
-
-        } catch (error) {
-            console.error('Error importing portals:', error);
-            throw new Error('Failed to import portals: ' + error.message);
-        }
-    }
 
     // Clear all portals
     clearAllPortals() {
@@ -262,38 +206,7 @@ class PortalManager {
         localStorage.removeItem(this.currentPortalKey);
     }
 
-    // Get portal statistics
-    getStatistics() {
-        return {
-            totalPortals: this.portals.length,
-            activePortals: this.portals.filter(p => p.isActive).length,
-            recentlyUsed: this.portals.filter(p => p.lastUsed).length,
-            withAutoConnect: this.portals.filter(p => p.settings.autoConnect).length
-        };
-    }
 
-    // Validate portal data
-    validatePortalData(portalData) {
-        const errors = [];
-
-        if (!portalData.url || typeof portalData.url !== 'string') {
-            errors.push('Portal URL is required');
-        } else {
-            try {
-                new URL(portalData.url);
-            } catch (e) {
-                errors.push('Invalid portal URL format');
-            }
-        }
-
-        if (!portalData.macAddress || typeof portalData.macAddress !== 'string') {
-            errors.push('MAC address is required');
-        } else if (!/^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$/.test(portalData.macAddress)) {
-            errors.push('Invalid MAC address format');
-        }
-
-        return errors;
-    }
 }
 
 // Create global portal manager instance

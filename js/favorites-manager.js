@@ -282,65 +282,7 @@ class FavoritesManager {
         );
     }
 
-    // Update favorite item data
-    updateFavorite(type, itemId, updateData, portalUrl = null) {
-        const currentPortalUrl = portalUrl || window.auth.getSession()?.portalUrl || '';
-        
-        if (!this.favorites[type]) {
-            return false;
-        }
 
-        const index = this.favorites[type].findIndex(fav => 
-            fav.id === itemId && fav.portalUrl === currentPortalUrl
-        );
-
-        if (index !== -1) {
-            this.favorites[type][index] = {
-                ...this.favorites[type][index],
-                ...updateData,
-                data: {
-                    ...this.favorites[type][index].data,
-                    ...updateData.data
-                }
-            };
-            this.saveFavorites();
-            return true;
-        }
-
-        return false;
-    }
-
-    // Get statistics
-    getStatistics() {
-        const stats = {
-            total: 0,
-            byType: {},
-            byPortal: {},
-            recentlyAdded: 0
-        };
-
-        const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-
-        Object.keys(this.favorites).forEach(type => {
-            stats.byType[type] = this.favorites[type].length;
-            stats.total += this.favorites[type].length;
-
-            this.favorites[type].forEach(fav => {
-                // Count by portal
-                if (!stats.byPortal[fav.portalUrl]) {
-                    stats.byPortal[fav.portalUrl] = 0;
-                }
-                stats.byPortal[fav.portalUrl]++;
-
-                // Count recently added
-                if (fav.addedDate > oneWeekAgo) {
-                    stats.recentlyAdded++;
-                }
-            });
-        });
-
-        return stats;
-    }
 }
 
 // Create global favorites manager instance
