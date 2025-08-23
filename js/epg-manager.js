@@ -216,86 +216,7 @@ class EPGManager {
         return `${minutes}m`;
     }
 
-    // Search programs by title or description
-    async searchPrograms(query, channelIds = null, days = 1) {
-        const results = [];
-        const lowercaseQuery = query.toLowerCase();
-        
-        try {
-            if (channelIds) {
-                // Search in specific channels
-                for (const channelId of channelIds) {
-                    const epgData = await this.getChannelEPG(channelId, days);
-                    if (epgData && epgData.epg_info) {
-                        const matches = epgData.epg_info.filter(program => 
-                            program.name.toLowerCase().includes(lowercaseQuery) ||
-                            (program.descr && program.descr.toLowerCase().includes(lowercaseQuery))
-                        );
-                        
-                        matches.forEach(program => {
-                            results.push({
-                                ...program,
-                                channelId: channelId
-                            });
-                        });
-                    }
-                }
-            } else {
-                // Search in all cached EPG data
-                Object.keys(this.epgCache).forEach(cacheKey => {
-                    const epgData = this.epgCache[cacheKey].data;
-                    if (epgData && epgData.epg_info) {
-                        const matches = epgData.epg_info.filter(program => 
-                            program.name.toLowerCase().includes(lowercaseQuery) ||
-                            (program.descr && program.descr.toLowerCase().includes(lowercaseQuery))
-                        );
-                        
-                        matches.forEach(program => {
-                            results.push({
-                                ...program,
-                                channelId: cacheKey.split('_')[0]
-                            });
-                        });
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error searching programs:', error);
-        }
-        
-        // Sort by start time
-        return results.sort((a, b) => a.start_timestamp - b.start_timestamp);
-    }
 
-    // Get programs by genre
-    async getProgramsByGenre(genre, channelIds = null, days = 1) {
-        const results = [];
-        const lowercaseGenre = genre.toLowerCase();
-        
-        try {
-            if (channelIds) {
-                for (const channelId of channelIds) {
-                    const epgData = await this.getChannelEPG(channelId, days);
-                    if (epgData && epgData.epg_info) {
-                        const matches = epgData.epg_info.filter(program => 
-                            program.category && program.category.toLowerCase().includes(lowercaseGenre)
-                        );
-                        
-                        matches.forEach(program => {
-                            results.push({
-                                ...program,
-                                channelId: channelId
-                            });
-                        });
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error getting programs by genre:', error);
-        }
-        
-        return results.sort((a, b) => a.start_timestamp - b.start_timestamp);
-    }
 
     // Clear all cached EPG data
     clearCache() {
@@ -303,23 +224,7 @@ class EPGManager {
         localStorage.removeItem(this.storageKey);
     }
 
-    // Get cache statistics
-    getCacheStats() {
-        const stats = {
-            entries: Object.keys(this.epgCache).length,
-            totalSize: JSON.stringify(this.epgCache).length,
-            oldestEntry: null,
-            newestEntry: null
-        };
 
-        const timestamps = Object.values(this.epgCache).map(entry => entry.timestamp);
-        if (timestamps.length > 0) {
-            stats.oldestEntry = Math.min(...timestamps);
-            stats.newestEntry = Math.max(...timestamps);
-        }
-
-        return stats;
-    }
 
     // Preload EPG for channels
     async preloadEPG(channelIds, days = 1) {

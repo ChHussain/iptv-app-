@@ -108,27 +108,7 @@ class MACGenerator {
         return macRegex.test(mac);
     }
 
-    // Format MAC address to standard format (with colons)
-    formatMAC(mac) {
-        // Remove any existing separators and convert to uppercase
-        const cleaned = mac.replace(/[^0-9a-fA-F]/g, '').toUpperCase();
-        
-        if (cleaned.length !== 12) {
-            throw new Error('Invalid MAC address length');
-        }
-        
-        // Insert colons
-        return cleaned.match(/.{2}/g).join(':').toLowerCase();
-    }
 
-    // Generate multiple MAC addresses for testing
-    generateMultipleMACs(count = 5) {
-        const macs = [];
-        for (let i = 0; i < count; i++) {
-            macs.push(this.generateMAC());
-        }
-        return macs;
-    }
 
     // Get suggested MAC addresses (virtual + some randoms)
     getSuggestedMACs() {
