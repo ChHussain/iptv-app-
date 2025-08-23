@@ -1,0 +1,21 @@
+{
+  "name": "iptv-app",
+  "version": "1.0.0",
+  "description": "IPTV application that works with Stalker portal like Smart STB",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "dev": "python3 -m http.server 8080",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "iptv",
+    "stalker",
+    "smart-stb",
+    "streaming"
+  ],
+  "author": "IPTV App Developer",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
