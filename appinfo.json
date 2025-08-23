@@ -1,0 +1,32 @@
+{
+  "id": "com.iptv.webos",
+  "version": "1.0.0",
+  "vendor": "IPTV App Developer",
+  "type": "web",
+  "main": "index.html",
+  "title": "IPTV Portal",
+  "icon": "icon.png",
+  "splashBackground": "splash.png",
+  "requiredPermissions": [
+    "media",
+    "network",
+    "storage"
+  ],
+  "resolution": "1920x1080",
+  "displayAffinity": "landscape",
+  "transparency": false,
+  "handlesRelaunch": true,
+  "supportGIP": false,
+  "enableSecurityCheck": false,
+  "disableBackHistoryAPI": true,
+  "bgImage": "splash.png",
+  "category": {
+    "gamepad": "NONE"
+  },
+  "accessibility": {
+    "supportsAudioGuidance": false,
+    "supportsKeyNavigation": true
+  },
+  "largeIcon": "icon.png",
+  "trustLevel": "default"
+}
