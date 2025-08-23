@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebOS TV Emulator Test</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .webos-simulator {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+        }
+        .webos-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .test-results {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .mac-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .mac-real {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+        }
+        .mac-virtual {
+            background: rgba(255, 152, 0, 0.3);
+            border: 1px solid #FF9800;
+        }
+        .mac-fake {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="webos-simulator">
+        <h1>WebOS TV Emulator - MAC Address Detection Test</h1>
+        
+        <div class="webos-info">
+            <h3>Simulating LG WebOS TV Environment</h3>
+            <p>This page simulates a WebOS TV environment to test MAC address detection capabilities.</p>
+            <button id="simulateWebOS" class="focusable">Simulate WebOS TV</button>
+            <button id="simulateVirtualBox" class="focusable">Simulate VirtualBox VM</button>
+            <button id="simulateRealDevice" class="focusable">Simulate Real Device</button>
+            <button id="resetEnvironment" class="focusable">Reset Environment</button>
+        </div>
+
+        <div class="test-results">
+            <h3>Detection Results</h3>
+            <div id="testResults">Click a simulation button to test MAC address detection...</div>
+        </div>
+
+        <div class="test-results">
+            <h3>Known MAC Address Patterns</h3>
+            <div class="mac-result mac-fake">
+                <strong>Fake/Hardcoded:</strong> 00:00:00:00:00:00, FF:FF:FF:FF:FF:FF, 00:11:22:33:44:55
+            </div>
+            <div class="mac-result mac-virtual">
+                <strong>VirtualBox:</strong> 08:00:27:xx:xx:xx (Oracle/VirtualBox default range)
+            </div>
+            <div class="mac-result mac-virtual">
+                <strong>VMware:</strong> 00:50:56:xx:xx:xx (VMware default range)
+            </div>
+            <div class="mac-result mac-real">
+                <strong>LG WebOS:</strong> Varies by device, typically unique manufacturer ranges
+            </div>
+        </div>
+    </div>
+
+    <script src="js/device.js"></script>
+    <script src="js/remote.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const simulateWebOSBtn = document.getElementById('simulateWebOS');
+            const simulateVirtualBoxBtn = document.getElementById('simulateVirtualBox');
+            const simulateRealDeviceBtn = document.getElementById('simulateRealDevice');
+            const resetEnvironmentBtn = document.getElementById('resetEnvironment');
+            const testResults = document.getElementById('testResults');
+
+            simulateWebOSBtn.addEventListener('click', async function() {
+                // Simulate WebOS environment
+                window.webOS = {
+                    deviceInfo: function() {
+                        return {
+                            networkInfo: {
+                                macAddress: '00:1a:79:12:34:56' // Simulated real WebOS MAC
+                            }
+                        };
+                    }
+                };
+                
+                // Override user agent
+                Object.defineProperty(navigator, 'userAgent', {
+                    value: 'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/538.2 (KHTML, like Gecko) Large Screen WebAppManager Safari/538.2',
+                    configurable: true
+                });
+
+                await testMACDetection('WebOS TV Simulation');
+            });
+
+            simulateVirtualBoxBtn.addEventListener('click', async function() {
+                // Remove WebOS environment
+                delete window.webOS;
+                
+                // Override user agent to look like VirtualBox
+                Object.defineProperty(navigator, 'userAgent', {
+                    value: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    configurable: true
+                });
+
+                // Simulate getting VirtualBox MAC
+                const originalMethod = window.deviceManager.generateDeviceFingerprint;
+                window.deviceManager.generateDeviceFingerprint = async function() {
+                    return '08:00:27:12:34:56'; // VirtualBox MAC pattern
+                };
+
+                await testMACDetection('VirtualBox VM Simulation');
+                
+                // Restore original method
+                window.deviceManager.generateDeviceFingerprint = originalMethod;
+            });
+
+            simulateRealDeviceBtn.addEventListener('click', async function() {
+                // Remove WebOS environment
+                delete window.webOS;
+                
+                // Override user agent
+                Object.defineProperty(navigator, 'userAgent', {
+                    value: 'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/538.2 (KHTML, like Gecko) Large Screen WebAppManager Safari/538.2',
+                    configurable: true
+                });
+
+                // Simulate real device MAC
+                const originalMethod = window.deviceManager.generateDeviceFingerprint;
+                window.deviceManager.generateDeviceFingerprint = async function() {
+                    return '2c:39:96:12:34:56'; // Real device MAC pattern (LG range)
+                };
+
+                await testMACDetection('Real LG WebOS Device Simulation');
+                
+                // Restore original method
+                window.deviceManager.generateDeviceFingerprint = originalMethod;
+            });
+
+            resetEnvironmentBtn.addEventListener('click', function() {
+                delete window.webOS;
+                location.reload();
+            });
+
+            async function testMACDetection(testName) {
+                testResults.innerHTML = `<h4>Testing: ${testName}</h4><p>Detecting MAC address...</p>`;
+                
+                try {
+                    // Create new device manager for fresh detection
+                    const testDeviceManager = new DeviceManager();
+                    const deviceInfo = await testDeviceManager.getDeviceInfo();
+                    const isSuspicious = testDeviceManager.isMACAddressSuspicious(deviceInfo.macAddress);
+                    
+                    let resultClass = 'mac-real';
+                    let suspiciousText = '';
+                    
+                    if (isSuspicious) {
+                        resultClass = deviceInfo.macAddress.startsWith('08:00:27') ? 'mac-virtual' : 'mac-fake';
+                        suspiciousText = ' ⚠️ SUSPICIOUS';
+                    } else {
+                        suspiciousText = ' ✅ APPEARS LEGITIMATE';
+                    }
+                    
+                    testResults.innerHTML = `
+                        <h4>Results for: ${testName}</h4>
+                        <div class="mac-result ${resultClass}">
+                            <strong>Platform:</strong> ${deviceInfo.platform}<br>
+                            <strong>MAC Address:</strong> ${deviceInfo.macAddress}${suspiciousText}<br>
+                            <strong>User Agent:</strong> ${navigator.userAgent.substring(0, 100)}...<br>
+                            <strong>Screen:</strong> ${deviceInfo.screenResolution}<br>
+                            <strong>WebOS API:</strong> ${typeof window.webOS !== 'undefined' ? 'Available' : 'Not Available'}
+                        </div>
+                        <p><strong>Analysis:</strong></p>
+                        <ul>
+                            <li>Real Device Detection: ${!isSuspicious ? 'PASSED' : 'FAILED'}</li>
+                            <li>VirtualBox Detection: ${deviceInfo.macAddress.startsWith('08:00:27') ? 'DETECTED' : 'NOT DETECTED'}</li>
+                            <li>Hardcoded Detection: ${['00:00:00:00:00:00', 'ff:ff:ff:ff:ff:ff'].includes(deviceInfo.macAddress.toLowerCase()) ? 'DETECTED' : 'NOT DETECTED'}</li>
+                        </ul>
+                    `;
+                } catch (error) {
+                    testResults.innerHTML = `
+                        <h4>Error testing: ${testName}</h4>
+                        <div class="mac-result mac-fake">
+                            <strong>Error:</strong> ${error.message}
+                        </div>
+                    `;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

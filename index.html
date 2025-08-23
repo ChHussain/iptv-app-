@@ -28,21 +28,35 @@
                         <input type="text" id="macAddress" name="macAddress" required 
                                placeholder="Detecting device MAC..." readonly
                                pattern="[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}">
-                        <button type="button" id="detectMacBtn" class="detect-btn">🔄 Detect</button>
-                        <button type="button" id="manualMacBtn" class="manual-btn" style="display: none;">✏️ Manual</button>
+                        <button type="button" id="detectMacBtn" class="detect-btn focusable">🔄 Detect</button>
+                        <button type="button" id="manualMacBtn" class="manual-btn focusable" style="display: none;">✏️ Manual</button>
                     </div>
                     <small class="mac-help">MAC address will be automatically detected from your device</small>
                 </div>
-                <button type="submit" id="loginBtn" disabled>Connect</button>
-                <button type="button" id="testConnectionBtn" class="test-btn" style="display: none;">Test Connection</button>
+                <button type="submit" id="loginBtn" class="focusable" disabled>Connect</button>
+                <button type="button" id="testConnectionBtn" class="test-btn focusable" style="display: none;">Test Connection</button>
             </form>
             <div id="loginError" class="error-message" style="display: none;"></div>
             <div id="loginLoading" class="loading" style="display: none;">Detecting device...</div>
             <div id="connectionTest" class="test-result" style="display: none;"></div>
         </div>
     </div>
+    
+    <!-- Remote Control Help -->
+    <div id="remoteHelp" class="remote-help">
+        <h4>Remote Control Help</h4>
+        <ul>
+            <li>↑↓←→ Navigate</li>
+            <li>OK/Enter: Select</li>
+            <li>Back: Return</li>
+            <li>Red: Exit</li>
+            <li>Green: OK</li>
+            <li>Yellow: Settings</li>
+        </ul>
+    </div>
     <script src="js/device.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/remote.js"></script>
     <script src="js/login.js"></script>
 </body>
 </html>
