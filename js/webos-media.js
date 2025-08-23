@@ -254,57 +254,14 @@ class WebOSMediaPlayer {
         }
     }
 
-    // Seek to position
-    seekTo(position) {
-        if (!this.isWebOS || !this.player) {
-            throw new Error('webOS media player not available');
-        }
 
-        try {
-            if (window.webOS && window.webOS.media) {
-                this.player.seek(position * 1000); // Convert to milliseconds
-            } else if (window.AVPlay) {
-                AVPlay.seekTo(position * 1000);
-            }
-        } catch (error) {
-            console.error('Seek error:', error);
-            this.emit('error', error);
-        }
-    }
-
-    // Set volume
-    setVolume(volume) {
-        if (!this.isWebOS || !this.player) {
-            throw new Error('webOS media player not available');
-        }
-
-        try {
-            if (window.webOS && window.webOS.media) {
-                this.player.setVolume(volume);
-            } else if (window.AVPlay) {
-                // AVPlay doesn't support volume control directly
-                // Volume is controlled by the system
-                console.log('Volume control not available in AVPlay');
-            }
-        } catch (error) {
-            console.error('Volume error:', error);
-        }
-    }
-
-    // Get current state
-    getState() {
-        return this.mediaState;
-    }
 
     // Check if media is playing
     isPlaying() {
         return this.mediaState === 'playing';
     }
 
-    // Check if media is paused
-    isPaused() {
-        return this.mediaState === 'paused';
-    }
+
 
     // Add event listener
     addEventListener(event, callback) {

@@ -198,23 +198,7 @@ class EPGManager {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    // Format date for display
-    formatDate(timestamp) {
-        const date = new Date(timestamp * 1000);
-        return date.toLocaleDateString();
-    }
 
-    // Format duration
-    formatDuration(startTimestamp, endTimestamp) {
-        const duration = (endTimestamp - startTimestamp) * 1000; // Convert to milliseconds
-        const hours = Math.floor(duration / (1000 * 60 * 60));
-        const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-        
-        if (hours > 0) {
-            return `${hours}h ${minutes}m`;
-        }
-        return `${minutes}m`;
-    }
 
 
 
