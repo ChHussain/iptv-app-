@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
     const portalUrlInput = document.getElementById('portalUrl');
     const macAddressInput = document.getElementById('macAddress');
+    const generateMacBtn = document.getElementById('generateMacBtn');
+    const savedPortalsDiv = document.getElementById('savedPortals');
     const loginBtn = document.getElementById('loginBtn');
     const loginError = document.getElementById('loginError');
     const loginLoading = document.getElementById('loginLoading');
@@ -13,8 +15,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Load saved values
+    // Load saved values and portals
     loadSavedValues();
+    loadSavedPortals();
+
+    // Generate MAC button handler
+    generateMacBtn.addEventListener('click', function() {
+        const generatedMAC = window.auth.generateVirtualMAC();
+        macAddressInput.value = generatedMAC;
+    });
 
     // Form submission handler
     loginForm.addEventListener('submit', async function(e) {
@@ -30,6 +39,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (!isValidMacAddress(macAddress)) {
+            showError('Please enter a valid MAC address (format: 00:1a:79:xx:xx:xx)');
+            return;
+        }
+
+        // Use auth class validation for better MAC validation
+        if (!window.auth.validateMAC(macAddress)) {
             showError('Please enter a valid MAC address (format: 00:1a:79:xx:xx:xx)');
             return;
         }
@@ -146,5 +161,48 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error loading saved values:', error);
         }
+    }
+
+    function loadSavedPortals() {
+        const portals = window.auth.getPortals();
+        savedPortalsDiv.innerHTML = '';
+
+        if (portals.length === 0) {
+            savedPortalsDiv.innerHTML = '<p class="no-portals">No saved portals</p>';
+            return;
+        }
+
+        portals.forEach((portal, index) => {
+            const portalElement = document.createElement('div');
+            portalElement.className = 'saved-portal focusable';
+            portalElement.innerHTML = `
+                <div class="portal-info">
+                    <div class="portal-name">${portal.name}</div>
+                    <div class="portal-mac">MAC: ${portal.macAddress}</div>
+                </div>
+                <div class="portal-actions">
+                    <button class="btn-use" data-index="${index}">Use</button>
+                    <button class="btn-delete" data-index="${index}">Delete</button>
+                </div>
+            `;
+            savedPortalsDiv.appendChild(portalElement);
+        });
+
+        // Add event listeners for portal actions
+        savedPortalsDiv.addEventListener('click', function(e) {
+            if (e.target.classList.contains('btn-use')) {
+                const index = parseInt(e.target.dataset.index);
+                const portal = portals[index];
+                portalUrlInput.value = portal.url;
+                macAddressInput.value = portal.macAddress;
+            } else if (e.target.classList.contains('btn-delete')) {
+                const index = parseInt(e.target.dataset.index);
+                const portal = portals[index];
+                if (confirm(`Delete portal ${portal.name}?`)) {
+                    window.auth.removePortal(portal.url);
+                    loadSavedPortals();
+                }
+            }
+        });
     }
 });

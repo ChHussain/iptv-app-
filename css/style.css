@@ -89,6 +89,89 @@ button:hover {
     font-weight: bold;
 }
 
+/* MAC Input Group */
+.mac-input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.mac-input-group input {
+    flex: 1;
+}
+
+.btn-secondary {
+    background: linear-gradient(45deg, #6c757d, #5a6268);
+    padding: 12px 16px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+/* Saved Portals */
+.saved-portals {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.no-portals {
+    text-align: center;
+    padding: 20px;
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+}
+
+.saved-portal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background-color 0.2s ease;
+}
+
+.saved-portal:last-child {
+    border-bottom: none;
+}
+
+.saved-portal:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.portal-info {
+    flex: 1;
+}
+
+.portal-name {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.portal-mac {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.portal-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-use, .btn-delete {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.btn-use {
+    background: linear-gradient(45deg, #28a745, #218838);
+}
+
+.btn-delete {
+    background: linear-gradient(45deg, #dc3545, #c82333);
+}
+
 /* Home Page Styles */
 .app-container {
     display: flex;

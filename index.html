@@ -18,8 +18,16 @@
                 </div>
                 <div class="form-group">
                     <label for="macAddress">MAC Address:</label>
-                    <input type="text" id="macAddress" name="macAddress" required 
-                           placeholder="00:1a:79:xx:xx:xx" pattern="[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}">
+                    <div class="mac-input-group">
+                        <input type="text" id="macAddress" name="macAddress" required 
+                               placeholder="00:1a:79:xx:xx:xx" pattern="[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}">
+                        <button type="button" id="generateMacBtn" class="btn-secondary">Generate</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Saved Portals:</label>
+                    <div id="savedPortals" class="saved-portals"></div>
                 </div>
                 <button type="submit" id="loginBtn">Connect</button>
             </form>
@@ -28,6 +36,7 @@
         </div>
     </div>
     <script src="js/auth.js"></script>
+    <script src="js/webos-remote.js"></script>
     <script src="js/login.js"></script>
 </body>
 </html>

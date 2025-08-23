@@ -2,7 +2,9 @@
 class Auth {
     constructor() {
         this.storageKey = 'iptv_session';
+        this.portalsKey = 'iptv_portals';
         this.session = this.loadSession();
+        this.portals = this.loadPortals();
     }
 
     // Load session from localStorage
@@ -26,10 +28,132 @@ class Auth {
         }
     }
 
+    // Load portals from localStorage
+    loadPortals() {
+        try {
+            const portals = localStorage.getItem(this.portalsKey);
+            return portals ? JSON.parse(portals) : [];
+        } catch (error) {
+            console.error('Error loading portals:', error);
+            return [];
+        }
+    }
+
+    // Save portals to localStorage
+    savePortals(portals) {
+        try {
+            localStorage.setItem(this.portalsKey, JSON.stringify(portals));
+            this.portals = portals;
+        } catch (error) {
+            console.error('Error saving portals:', error);
+        }
+    }
+
+    // Add a new portal
+    addPortal(portalData) {
+        const existingIndex = this.portals.findIndex(p => p.url === portalData.url);
+        if (existingIndex >= 0) {
+            this.portals[existingIndex] = portalData;
+        } else {
+            this.portals.push(portalData);
+        }
+        this.savePortals(this.portals);
+    }
+
+    // Remove a portal
+    removePortal(portalUrl) {
+        this.portals = this.portals.filter(p => p.url !== portalUrl);
+        this.savePortals(this.portals);
+    }
+
+    // Get all saved portals
+    getPortals() {
+        return this.portals;
+    }
+
+    // Generate a virtual MAC address
+    generateVirtualMAC() {
+        const chars = '0123456789ABCDEF';
+        let mac = '00:1A:79:'; // Common prefix for virtual MACs
+        
+        for (let i = 0; i < 6; i++) {
+            if (i > 0 && i % 2 === 0) {
+                mac += ':';
+            }
+            mac += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        
+        return mac;
+    }
+
+    // Validate MAC address format
+    validateMAC(mac) {
+        const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+        return macRegex.test(mac);
+    }
+
     // Clear session
     clearSession() {
         localStorage.removeItem(this.storageKey);
         this.session = null;
+        this.stopKeepAlive();
+    }
+
+    // Keep-alive mechanism to maintain session
+    async startKeepAlive() {
+        if (!this.session) return;
+        
+        // Send keep-alive every 10 minutes
+        this.keepAliveInterval = setInterval(async () => {
+            try {
+                await this.sendKeepAlive();
+            } catch (error) {
+                console.error('Keep-alive failed:', error);
+                // If keep-alive fails multiple times, logout
+                if (!this.keepAliveFailures) this.keepAliveFailures = 0;
+                this.keepAliveFailures++;
+                
+                if (this.keepAliveFailures >= 3) {
+                    console.log('Multiple keep-alive failures, logging out');
+                    this.logout();
+                }
+            }
+        }, 600000); // 10 minutes
+    }
+
+    // Stop keep-alive mechanism
+    stopKeepAlive() {
+        if (this.keepAliveInterval) {
+            clearInterval(this.keepAliveInterval);
+            this.keepAliveInterval = null;
+        }
+    }
+
+    // Send keep-alive request
+    async sendKeepAlive() {
+        if (!this.session) throw new Error('No active session');
+        
+        const keepAliveUrl = `${this.session.portalUrl}watchdog`;
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
+            'X-User-Agent': 'Model: MAG250; Link: WiFi',
+            'Authorization': `Bearer ${this.session.token}`,
+            'Cookie': `mac=${this.session.macAddress}; stb_lang=en; timezone=Europe/Kiev;`
+        };
+
+        const response = await fetch(keepAliveUrl, {
+            method: 'GET',
+            headers: headers,
+            mode: 'cors'
+        });
+
+        if (response.ok) {
+            this.keepAliveFailures = 0;
+            const data = await response.json();
+            return data;
+        } else {
+            throw new Error(`Keep-alive failed: ${response.status}`);
+        }
     }
 
     // Check if user is authenticated
@@ -61,6 +185,18 @@ class Auth {
                 };
 
                 this.saveSession(sessionData);
+                
+                // Save portal for future use
+                this.addPortal({
+                    url: normalizedUrl,
+                    macAddress: macAddress,
+                    name: this.extractPortalName(normalizedUrl),
+                    lastUsed: Date.now()
+                });
+                
+                // Start keep-alive mechanism
+                this.startKeepAlive();
+                
                 return { success: true, session: sessionData };
             } else {
                 throw new Error('Invalid response from portal');
@@ -90,6 +226,16 @@ class Auth {
         }
         
         return url;
+    }
+
+    // Extract portal name from URL for display
+    extractPortalName(url) {
+        try {
+            const urlObj = new URL(url);
+            return urlObj.hostname + (urlObj.port ? `:${urlObj.port}` : '');
+        } catch (error) {
+            return url;
+        }
     }
 
     // Perform handshake with Stalker portal

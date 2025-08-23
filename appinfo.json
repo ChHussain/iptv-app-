@@ -1,0 +1,47 @@
+{
+  "id": "com.iptv.stalker",
+  "version": "1.0.0",
+  "vendor": "IPTV Solutions",
+  "type": "web",
+  "main": "index.html",
+  "title": "IPTV Stalker Portal",
+  "icon": "icon.png",
+  "largeIcon": "large_icon.png",
+  "iconColor": "#2a5298",
+  "bgColor": "#1e3c72",
+  "category": "multimedia",
+  "keywords": ["iptv", "streaming", "stalker", "tv", "multimedia"],
+  "webOSVersion": "6.0.0",
+  "supportedLocales": ["en-US", "en-GB"],
+  "defaultLocale": "en-US",
+  "trustLevel": "default",
+  "resolution": "1920x1080",
+  "tileSize": "normal",
+  "splashBackground": "splashscreen.png",
+  "networkAccess": true,
+  "internetPermission": true,
+  "vendor.webos.allowCrossOrigin": true,
+  "vendor.webos.accessibilityEnabled": true,
+  "requiredPermissions": [
+    "time.query",
+    "media.operation",
+    "audio.operation"
+  ],
+  "uiRevision": 2,
+  "handlesRelaunch": true,
+  "disableBackHistoryAPI": false,
+  "transparent": false,
+  "accessibility": {
+    "supportsAudioGuidance": false
+  },
+  "mediaCodecs": {
+    "video": ["h264", "h265", "vp8", "vp9"],
+    "audio": ["aac", "mp3", "ac3", "eac3"]
+  },
+  "supportedDevices": ["tv"],
+  "deviceCompatibility": {
+    "webOS": {
+      "minVersion": "6.0.0"
+    }
+  }
+}
