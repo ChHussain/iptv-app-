@@ -1029,6 +1029,65 @@ button:hover {
     max-height: 150px;
 }
 
+/* Connection Troubleshooting */
+.connection-troubleshooting {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(42, 82, 152, 0.2);
+    border-radius: 8px;
+    border-left: 4px solid #ff9800;
+}
+
+.connection-troubleshooting h4 {
+    margin: 0 0 10px 0;
+    color: #ff9800;
+    font-size: 14px;
+}
+
+.error-analysis {
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+
+.error-analysis strong {
+    color: #f44336;
+}
+
+.error-analysis em {
+    color: #ffcdd2;
+}
+
+.troubleshooting-tips {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(42, 82, 152, 0.3);
+}
+
+.troubleshooting-tips h5 {
+    margin: 0 0 8px 0;
+    color: #2196F3;
+    font-size: 13px;
+}
+
+.troubleshooting-tips ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.troubleshooting-tips li {
+    margin-bottom: 5px;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.troubleshooting-tips strong {
+    color: #b3d4fc;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .diagnostics-panel {
