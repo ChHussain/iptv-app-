@@ -182,6 +182,45 @@ class StalkerAPI {
         });
     }
 
+    // Get radio stations (might be same as channels or separate)
+    async getRadio(genre = null, page = 1, pageSize = 14) {
+        try {
+            // First try radio-specific endpoint
+            return await this.apiRequest('radio', {
+                type: 'radio',
+                action: 'get_ordered_list',
+                p: page,
+                JsHttpRequest: `1-xml`,
+                ...(genre && { genre })
+            });
+        } catch (error) {
+            // Fallback to channels with radio genre filter
+            console.log('Radio endpoint not available, using channels');
+            return await this.getChannels('radio', page, pageSize);
+        }
+    }
+
+    // Get radio stream link
+    async getRadioLink(radioId) {
+        try {
+            // Try radio-specific endpoint first
+            return await this.apiRequest('radio', {
+                type: 'radio',
+                action: 'create_link',
+                cmd: radioId,
+                series: '',
+                forced_storage: 'undefined',
+                disable_ad: '0',
+                download: '0',
+                JsHttpRequest: `1-xml`
+            });
+        } catch (error) {
+            // Fallback to channel endpoint
+            console.log('Radio link endpoint not available, using channel link');
+            return await this.getChannelLink(radioId);
+        }
+    }
+
     // Get series seasons and episodes
     async getSeriesInfo(seriesId) {
         return await this.apiRequest('series', {

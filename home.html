@@ -20,9 +20,12 @@
         </header>
 
         <nav class="main-nav">
-            <button class="nav-btn active" data-section="channels">📺 Live TV</button>
-            <button class="nav-btn" data-section="movies">🎬 Movies</button>
-            <button class="nav-btn" data-section="series">📺 Series</button>
+            <button class="nav-btn active focusable" data-section="channels">📺 Live TV</button>
+            <button class="nav-btn focusable" data-section="movies">🎬 Movies</button>
+            <button class="nav-btn focusable" data-section="series">📺 Series</button>
+            <button class="nav-btn focusable" data-section="epg">📋 EPG Guide</button>
+            <button class="nav-btn focusable" data-section="favorites">❤️ Favorites</button>
+            <button class="nav-btn focusable" data-section="radio">📻 Radio</button>
         </nav>
 
         <main class="content">
@@ -31,23 +34,61 @@
             
             <section id="channels" class="content-section active">
                 <h3>Live TV Channels</h3>
+                <div class="content-filters">
+                    <select id="channelGenreFilter" class="genre-filter focusable">
+                        <option value="">All Genres</option>
+                    </select>
+                </div>
                 <div id="channelsList" class="content-grid"></div>
             </section>
 
             <section id="movies" class="content-section">
                 <h3>Movies</h3>
+                <div class="content-filters">
+                    <select id="movieGenreFilter" class="genre-filter focusable">
+                        <option value="">All Genres</option>
+                    </select>
+                </div>
                 <div id="moviesList" class="content-grid"></div>
             </section>
 
             <section id="series" class="content-section">
                 <h3>TV Series</h3>
+                <div class="content-filters">
+                    <select id="seriesGenreFilter" class="genre-filter focusable">
+                        <option value="">All Genres</option>
+                    </select>
+                </div>
                 <div id="seriesList" class="content-grid"></div>
+            </section>
+
+            <section id="epg" class="content-section">
+                <h3>Electronic Program Guide</h3>
+                <div id="epgContainer" class="epg-container"></div>
+            </section>
+
+            <section id="favorites" class="content-section">
+                <h3>Favorites</h3>
+                <div id="favoritesContainer" class="favorites-container"></div>
+            </section>
+
+            <section id="radio" class="content-section">
+                <h3>Radio Stations</h3>
+                <div class="content-filters">
+                    <select id="radioGenreFilter" class="genre-filter focusable">
+                        <option value="">All Genres</option>
+                    </select>
+                </div>
+                <div id="radioList" class="content-grid"></div>
             </section>
         </main>
     </div>
 
     <script src="js/auth.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/webos-remote.js"></script>
+    <script src="js/favorites.js"></script>
+    <script src="js/epg.js"></script>
     <script src="js/home.js"></script>
 </body>
 </html>

@@ -22,6 +22,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize player
     initializePlayer();
+    
+    // Initialize webOS media player
+    if (window.webOSPlayer) {
+        window.webOSPlayer.initialize().then(() => {
+            console.log('webOS player initialized');
+            setupPlayerEventListeners();
+        }).catch(error => {
+            console.error('Failed to initialize webOS player:', error);
+            setupPlayerEventListeners(); // Fallback to HTML5
+        });
+    } else {
+        setupPlayerEventListeners();
+    }
 
     // Back button handler
     backBtn.addEventListener('click', function() {
@@ -76,6 +89,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     streamData = await window.api.getSeriesLink(contentId, 1, 1);
                     break;
 
+                case 'radio':
+                    streamData = await window.api.getRadioLink(contentId);
+                    break;
+
                 default:
                     throw new Error('Unknown content type: ' + contentType);
             }
@@ -94,6 +111,40 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadStream(streamUrl) {
+        console.log('Loading stream:', streamUrl);
+        hideError();
+        showLoading(true);
+
+        try {
+            // Use webOS player if available
+            if (window.webOSPlayer && window.webOSPlayer.player) {
+                console.log('Using webOS media player');
+                
+                // Determine media type based on content type
+                const mediaType = contentType === 'channel' || contentType === 'radio' ? 'live' : 'vod';
+                
+                window.webOSPlayer.loadStream(streamUrl, mediaType)
+                    .then(() => {
+                        console.log('Stream loaded successfully');
+                        showLoading(false);
+                        return window.webOSPlayer.play();
+                    })
+                    .catch(error => {
+                        console.error('webOS player failed, falling back to HTML5:', error);
+                        loadStreamHTML5(streamUrl);
+                    });
+            } else {
+                console.log('Using HTML5 video player');
+                loadStreamHTML5(streamUrl);
+            }
+        } catch (error) {
+            console.error('Error setting up stream:', error);
+            showError('Failed to setup video stream');
+            showLoading(false);
+        }
+    }
+
+    function loadStreamHTML5(streamUrl) {
         try {
             // Handle different stream types
             if (streamUrl.includes('.m3u8')) {
@@ -162,6 +213,9 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'series':
                 infoHtml += `<p>Type: TV Series</p>`;
                 break;
+            case 'radio':
+                infoHtml += `<p>Type: Radio Station</p>`;
+                break;
         }
 
         if (streamData.epg_id) {
@@ -184,6 +238,71 @@ document.addEventListener('DOMContentLoaded', function() {
         playerError.style.display = 'none';
     }
 
+    // Setup player event listeners for both webOS and HTML5
+    function setupPlayerEventListeners() {
+        if (window.webOSPlayer) {
+            // webOS player events
+            window.webOSPlayer.on('loadCompleted', () => {
+                showLoading(false);
+                hideError();
+            });
+
+            window.webOSPlayer.on('bufferingStart', () => {
+                showLoading(true);
+            });
+
+            window.webOSPlayer.on('bufferingComplete', () => {
+                showLoading(false);
+            });
+
+            window.webOSPlayer.on('playing', () => {
+                showLoading(false);
+                hideError();
+            });
+
+            window.webOSPlayer.on('error', (error) => {
+                console.error('webOS player error:', error);
+                showLoading(false);
+                showError('Playback error: ' + (error.message || 'Unknown error'));
+            });
+
+            window.webOSPlayer.on('ended', () => {
+                console.log('Playback ended');
+                // Could navigate back or show replay options
+            });
+        }
+
+        // HTML5 video events (fallback)
+        if (videoPlayer) {
+            videoPlayer.addEventListener('loadstart', () => {
+                showLoading(true);
+            });
+
+            videoPlayer.addEventListener('canplay', () => {
+                showLoading(false);
+                hideError();
+            });
+
+            videoPlayer.addEventListener('error', (e) => {
+                console.error('Video player error:', e);
+                showLoading(false);
+                showError('Failed to load video stream. The stream may be unavailable or your browser may not support this format.');
+            });
+
+            videoPlayer.addEventListener('loadeddata', () => {
+                showLoading(false);
+            });
+
+            videoPlayer.addEventListener('waiting', () => {
+                showLoading(true);
+            });
+
+            videoPlayer.addEventListener('playing', () => {
+                showLoading(false);
+            });
+        }
+    }
+
     // Keyboard controls
     document.addEventListener('keydown', function(e) {
         switch (e.key) {
@@ -191,17 +310,13 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'k':
                 // Space or K to pause/play
                 e.preventDefault();
-                if (videoPlayer.paused) {
-                    videoPlayer.play();
-                } else {
-                    videoPlayer.pause();
-                }
+                togglePlayPause();
                 break;
 
             case 'f':
                 // F for fullscreen
                 e.preventDefault();
-                if (videoPlayer.requestFullscreen) {
+                if (videoPlayer && videoPlayer.requestFullscreen) {
                     videoPlayer.requestFullscreen();
                 }
                 break;
@@ -209,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'm':
                 // M to mute/unmute
                 e.preventDefault();
-                videoPlayer.muted = !videoPlayer.muted;
+                toggleMute();
                 break;
 
             case 'Escape':
@@ -221,28 +336,84 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'ArrowLeft':
                 // Left arrow to seek backward
                 e.preventDefault();
-                videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
+                seekBackward();
                 break;
 
             case 'ArrowRight':
                 // Right arrow to seek forward
                 e.preventDefault();
-                videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);
+                seekForward();
                 break;
 
             case 'ArrowUp':
                 // Up arrow to increase volume
                 e.preventDefault();
-                videoPlayer.volume = Math.min(1, videoPlayer.volume + 0.1);
+                adjustVolume(0.1);
                 break;
 
             case 'ArrowDown':
                 // Down arrow to decrease volume
                 e.preventDefault();
-                videoPlayer.volume = Math.max(0, videoPlayer.volume - 0.1);
+                adjustVolume(-0.1);
                 break;
         }
     });
+
+    // Enhanced player control functions
+    function togglePlayPause() {
+        if (window.webOSPlayer && window.webOSPlayer.player) {
+            if (window.webOSPlayer.isPlaying) {
+                window.webOSPlayer.pause();
+            } else {
+                window.webOSPlayer.play();
+            }
+        } else if (videoPlayer) {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+            } else {
+                videoPlayer.pause();
+            }
+        }
+    }
+
+    function toggleMute() {
+        if (window.webOSPlayer && window.webOSPlayer.player) {
+            // webOS mute handling
+            const currentVolume = window.webOSPlayer.getCurrentVolume?.() || 0.8;
+            window.webOSPlayer.setVolume(currentVolume > 0 ? 0 : 0.8);
+        } else if (videoPlayer) {
+            videoPlayer.muted = !videoPlayer.muted;
+        }
+    }
+
+    function seekBackward() {
+        if (window.webOSPlayer && window.webOSPlayer.player) {
+            const currentTime = window.webOSPlayer.getCurrentTime();
+            window.webOSPlayer.seek(Math.max(0, currentTime - 10));
+        } else if (videoPlayer) {
+            videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
+        }
+    }
+
+    function seekForward() {
+        if (window.webOSPlayer && window.webOSPlayer.player) {
+            const currentTime = window.webOSPlayer.getCurrentTime();
+            window.webOSPlayer.seek(currentTime + 10);
+        } else if (videoPlayer) {
+            videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);
+        }
+    }
+
+    function adjustVolume(delta) {
+        if (window.webOSPlayer && window.webOSPlayer.player) {
+            const currentVolume = window.webOSPlayer.getCurrentVolume?.() || 0.8;
+            const newVolume = Math.max(0, Math.min(1, currentVolume + delta));
+            window.webOSPlayer.setVolume(newVolume);
+        } else if (videoPlayer) {
+            const newVolume = Math.max(0, Math.min(1, videoPlayer.volume + delta));
+            videoPlayer.volume = newVolume;
+        }
+    }
 
     // Auto-save player settings
     videoPlayer.addEventListener('volumechange', function() {
