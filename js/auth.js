@@ -48,6 +48,14 @@ class Auth {
             // Normalize portal URL
             const normalizedUrl = this.normalizePortalUrl(portalUrl);
             
+            // Log authentication attempt
+            if (window.diagnostics) {
+                window.diagnostics.log('info', 'Authentication attempt started', {
+                    portalUrl: normalizedUrl,
+                    macAddress: macAddress
+                });
+            }
+            
             // Create handshake request
             const handshakeData = await this.performHandshake(normalizedUrl, macAddress);
             
@@ -61,12 +69,30 @@ class Auth {
                 };
 
                 this.saveSession(sessionData);
+                
+                // Log successful authentication
+                if (window.diagnostics) {
+                    window.diagnostics.log('info', 'Authentication successful', {
+                        portalUrl: normalizedUrl,
+                        tokenExpiry: new Date(sessionData.tokenExpiry).toISOString()
+                    });
+                }
+                
                 return { success: true, session: sessionData };
             } else {
                 throw new Error('Invalid response from portal');
             }
         } catch (error) {
             console.error('Login error:', error);
+            
+            // Log authentication error
+            if (window.diagnostics) {
+                window.diagnostics.log('error', 'Authentication failed', {
+                    portalUrl: portalUrl,
+                    error: error.message
+                });
+            }
+            
             return { success: false, error: error.message };
         }
     }
