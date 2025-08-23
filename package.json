@@ -2,7 +2,7 @@
   "name": "webos-iptv-app",
   "version": "1.0.0",
   "description": "IPTV application for LG webOS 6.0.0 that emulates MAG-based Stalker Portal",
-  "main": "index.html",
+  "main": "electron-main.js",
   "scripts": {
     "start": "python3 proxy-server.py 8080",
     "dev": "python3 proxy-server.py 8080",
@@ -10,7 +10,11 @@
     "test": "echo \"No tests specified\" && exit 0",
     "webos-package": "ares-package .",
     "webos-install": "ares-install *.ipk",
-    "webos-launch": "ares-launch webos-iptv-app"
+    "webos-launch": "ares-launch webos-iptv-app",
+    "electron": "electron .",
+    "electron-dev": "NODE_ENV=development electron .",
+    "build-electron": "electron-builder",
+    "dist": "electron-builder --publish=never"
   },
   "keywords": [
     "iptv",
@@ -33,6 +37,31 @@
       "storage"
     ]
   },
-  "devDependencies": {},
+  "build": {
+    "appId": "com.iptv.stalker",
+    "productName": "IPTV Stalker Player",
+    "directories": {
+      "buildResources": "build"
+    },
+    "files": [
+      "**/*",
+      "!node_modules",
+      "!src",
+      "!.git"
+    ],
+    "mac": {
+      "category": "public.app-category.entertainment"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.0.0"
+  },
   "dependencies": {}
 }
