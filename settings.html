@@ -31,6 +31,26 @@
             </div>
 
             <div class="settings-section">
+                <h3>Device Information</h3>
+                <div class="settings-item">
+                    <label>Platform:</label>
+                    <span id="devicePlatform">Detecting...</span>
+                </div>
+                <div class="settings-item">
+                    <label>Device Type:</label>
+                    <span id="deviceType">Unknown</span>
+                </div>
+                <div class="settings-item">
+                    <label>MAC Address Source:</label>
+                    <span id="macSource">Unknown</span>
+                </div>
+                <div class="settings-item">
+                    <label>Screen Resolution:</label>
+                    <span id="screenInfo">Unknown</span>
+                </div>
+            </div>
+
+            <div class="settings-section">
                 <h3>Player Settings</h3>
                 <div class="settings-item">
                     <label for="autoplay">Autoplay:</label>
@@ -53,6 +73,7 @@
         </div>
     </div>
 
+    <script src="js/device.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/api.js"></script>
     <script src="js/settings.js"></script>

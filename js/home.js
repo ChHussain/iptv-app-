@@ -42,8 +42,27 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializePage() {
         const session = window.auth.getSession();
         if (session) {
+            // Display portal info
             const portalUrl = new URL(session.portalUrl);
             portalInfo.textContent = `Connected to: ${portalUrl.hostname}`;
+            
+            // Display MAC address info
+            const macInfo = document.getElementById('macInfo');
+            if (macInfo) {
+                macInfo.textContent = `MAC: ${session.macAddress}`;
+            }
+            
+            // Display device indicator
+            const deviceIndicator = document.getElementById('deviceIndicator');
+            if (deviceIndicator && session.deviceInfo) {
+                deviceIndicator.textContent = `${session.deviceInfo.platform.toUpperCase()} Device`;
+                
+                // Add warning if MAC seems suspicious
+                if (window.deviceManager && window.deviceManager.isMACAddressSuspicious(session.macAddress)) {
+                    deviceIndicator.textContent += ' (Virtual)';
+                    deviceIndicator.style.color = '#ffc107';
+                }
+            }
         }
     }
 

@@ -192,14 +192,120 @@ class StalkerAPI {
         });
     }
 
-    // Test connection to portal
+    // Test connection to portal and validate real data
     async testConnection() {
         try {
-            const profile = await this.getProfile();
-            return { success: true, profile };
+            console.log('Testing connection to IPTV portal...');
+            
+            // Test 1: Get profile information
+            const profileResult = await this.getProfile();
+            console.log('Profile test result:', profileResult);
+            
+            // Test 2: Try to get channel list to verify real content
+            let channelsResult = null;
+            try {
+                channelsResult = await this.getChannels();
+                console.log('Channels test result:', channelsResult);
+            } catch (channelError) {
+                console.warn('Channels test failed:', channelError);
+            }
+            
+            // Test 3: Try to get movie list to verify content diversity
+            let moviesResult = null;
+            try {
+                moviesResult = await this.getMovies();
+                console.log('Movies test result:', moviesResult);
+            } catch (movieError) {
+                console.warn('Movies test failed:', movieError);
+            }
+            
+            // Analyze results to determine if this is a real portal
+            const analysis = this.analyzePortalResponse(profileResult, channelsResult, moviesResult);
+            
+            return { 
+                success: true, 
+                profile: profileResult,
+                channels: channelsResult,
+                movies: moviesResult,
+                analysis: analysis
+            };
         } catch (error) {
+            console.error('Connection test failed:', error);
             return { success: false, error: error.message };
         }
+    }
+
+    // Analyze portal responses to detect fake/demo content
+    analyzePortalResponse(profile, channels, movies) {
+        const analysis = {
+            isReal: true,
+            confidence: 100,
+            issues: [],
+            indicators: []
+        };
+
+        // Check profile for real vs demo indicators
+        if (profile) {
+            if (profile.name && (profile.name.toLowerCase().includes('demo') || profile.name.toLowerCase().includes('test'))) {
+                analysis.issues.push('Profile contains demo/test indicators');
+                analysis.confidence -= 20;
+            }
+            
+            if (profile.tariff_plan && profile.tariff_plan.toLowerCase().includes('demo')) {
+                analysis.issues.push('Tariff plan indicates demo account');
+                analysis.confidence -= 15;
+            }
+            
+            analysis.indicators.push('Profile data available');
+        } else {
+            analysis.issues.push('No profile data available');
+            analysis.confidence -= 30;
+        }
+
+        // Check channels for real content
+        if (channels && channels.data && Array.isArray(channels.data)) {
+            if (channels.data.length === 0) {
+                analysis.issues.push('No channels available');
+                analysis.confidence -= 40;
+            } else if (channels.data.length < 10) {
+                analysis.issues.push('Very few channels available (possible demo)');
+                analysis.confidence -= 20;
+            } else {
+                analysis.indicators.push(`${channels.data.length} channels available`);
+            }
+            
+            // Check for demo channel names
+            const demoNames = channels.data.filter(ch => 
+                ch.name && (ch.name.toLowerCase().includes('demo') || ch.name.toLowerCase().includes('test'))
+            );
+            if (demoNames.length > 0) {
+                analysis.issues.push('Demo/test channels detected');
+                analysis.confidence -= 15;
+            }
+        } else {
+            analysis.issues.push('No channel data available');
+            analysis.confidence -= 25;
+        }
+
+        // Check movies for content diversity
+        if (movies && movies.data && Array.isArray(movies.data)) {
+            if (movies.data.length === 0) {
+                analysis.issues.push('No movies available');
+                analysis.confidence -= 20;
+            } else {
+                analysis.indicators.push(`${movies.data.length} movies available`);
+            }
+        }
+
+        analysis.isReal = analysis.confidence > 50;
+        
+        if (analysis.confidence < 30) {
+            analysis.issues.push('Portal appears to be demo/fake - very limited functionality');
+        } else if (analysis.confidence < 60) {
+            analysis.issues.push('Portal may be demo/limited - some functionality missing');
+        }
+
+        return analysis;
     }
 }
 
