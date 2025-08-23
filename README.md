@@ -5,15 +5,17 @@ A production-ready IPTV application specifically designed for LG webOS 6.0.0 tha
 ## Features
 
 - **LG webOS 6.0.0 Compatibility**: Native integration with webOS media APIs (webOS.media and AVPlay)
-- **Stalker Portal Authentication**: MAC address + Portal URL login (Stalker middleware style)
+- **Enhanced CORS Bypass**: 9 comprehensive strategies to overcome browser security restrictions, replicating VU IPTV and Smart STB behavior
+- **Stalker Portal Authentication**: MAC address + Portal URL login (Stalker middleware style) with automatic fallback methods
 - **MAC Address Management**: Auto-generate virtual MAC or manually input custom MAC addresses
 - **Multi-Portal Support**: Manage and switch between multiple IPTV portals
-- **Content Streaming**: Live TV channels, Movies, TV Series with webOS-optimized playback
+- **Content Streaming**: Live TV channels, Movies, TV Series with webOS-optimized playbook
 - **Electronic Program Guide (EPG)**: Timeline view with current and upcoming programs
 - **Favorites Management**: Save and organize favorite channels, movies, and series
 - **TV Remote Navigation**: Optimized for LG TV remote control with full keyboard support
 - **Session Management**: Secure authentication with automatic token refresh
-- **Error Handling**: Comprehensive error handling for portal timeouts and stream failures
+- **Comprehensive Error Handling**: Advanced portal timeout and stream failure handling with bypass strategies
+- **CORS Testing Interface**: Dedicated testing page at `/cors-test.html` for strategy validation
 
 ## webOS 6.0.0 Specific Features
 
@@ -95,15 +97,48 @@ MAC addresses should be in the format: `00:1a:79:xx:xx:xx`
 
 ### Common Issues
 
-1. **CORS Errors**: Some portals may not allow cross-origin requests from browsers. This is a limitation of the portal configuration.
+1. **CORS Errors**: The app now includes comprehensive CORS bypass strategies that automatically attempt multiple authentication methods when standard requests fail. These bypass methods replicate VU IPTV and Smart STB behavior.
 
-2. **Stream Playback Issues**: Modern browsers have restrictions on autoplay and certain video formats. Ensure user interaction before playback.
+2. **Portal Authentication**: The system now tries 9 different authentication strategies automatically:
+   - Standard CORS with VU IPTV headers
+   - JSONP callback authentication
+   - WebRTC data channel connections
+   - Server-Sent Events streaming
+   - Alternative portal endpoints
+   - WebSocket bidirectional connections
+   - Proxy server relay
+   - No-CORS opaque detection
+   - Form submission bypass
 
-3. **Authentication Failures**: Verify that the portal URL and MAC address are correct and that the portal is accessible.
+3. **Stream Playback Issues**: Modern browsers have restrictions on autoplay and certain video formats. Ensure user interaction before playback.
+
+### CORS Bypass Testing
+
+Access the comprehensive testing interface at `/cors-test.html` to:
+- Test all bypass strategies systematically
+- Monitor real-time authentication attempts
+- View detailed logs of each strategy
+- Validate portal compatibility
+
+### Enhanced Server
+
+Start the enhanced proxy server for maximum compatibility:
+
+```bash
+npm start
+# or
+python3 proxy-server.py 8080
+```
+
+This provides:
+- CORS proxy requests handling
+- Server-Sent Events for real-time communication
+- WebSocket support for interactive sessions
+- VU IPTV/Smart STB header emulation
 
 ### Browser Console
 
-Check the browser's developer console for detailed error messages and debugging information.
+Check the browser's developer console for detailed error messages and debugging information. The system now provides comprehensive logging of all authentication attempts.
 
 ## Development
 
