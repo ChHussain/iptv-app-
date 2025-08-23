@@ -178,6 +178,21 @@ document.addEventListener('DOMContentLoaded', function() {
             showSuccess('Virtual MAC address generated and applied');
         });
         
+        // Generate Provider MAC button
+        const generateProviderBtn = document.createElement('button');
+        generateProviderBtn.type = 'button';
+        generateProviderBtn.textContent = 'Use Provider MAC';
+        generateProviderBtn.style.flex = '1';
+        generateProviderBtn.style.fontSize = '14px';
+        generateProviderBtn.style.padding = '8px';
+        generateProviderBtn.style.backgroundColor = '#4CAF50';
+        generateProviderBtn.style.color = 'white';
+        generateProviderBtn.addEventListener('click', function() {
+            const providerMAC = window.macGenerator.getProviderMAC();
+            macAddressInput.value = providerMAC;
+            showSuccess('Provider-supplied MAC address applied (VU IPTV compatible)');
+        });
+        
         // Generate Random MAC button
         const generateRandomBtn = document.createElement('button');
         generateRandomBtn.type = 'button';
@@ -200,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showSuggestionsBtn.style.padding = '8px';
         showSuggestionsBtn.addEventListener('click', showMACsuggestions);
         
+        buttonContainer.appendChild(generateProviderBtn);
         buttonContainer.appendChild(generateVirtualBtn);
         buttonContainer.appendChild(generateRandomBtn);
         buttonContainer.appendChild(showSuggestionsBtn);

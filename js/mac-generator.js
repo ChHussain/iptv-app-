@@ -114,6 +114,13 @@ class MACGenerator {
     getSuggestedMACs() {
         const suggestions = [];
         
+        // Add provider-supplied MAC first (highest priority)
+        suggestions.push({
+            type: 'provider',
+            mac: 'AA:7A:10:57:C1:00',
+            description: 'Provider-supplied MAC (VU IPTV/Smart STB compatible)'
+        });
+        
         // Add virtual MAC
         suggestions.push({
             type: 'virtual',
@@ -148,6 +155,11 @@ class MACGenerator {
         });
         
         return suggestions;
+    }
+
+    // Get the provider-supplied MAC address
+    getProviderMAC() {
+        return 'AA:7A:10:57:C1:00';
     }
 }
 
