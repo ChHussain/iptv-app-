@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Bypass Testing - IPTV Portal Authentication</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        input, select, button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        input, select {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+            min-width: 120px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .results {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 2px 0;
+        }
+        .log-success { color: #4CAF50; }
+        .log-error { color: #f44336; }
+        .log-info { color: #2196F3; }
+        .log-warning { color: #FF9800; }
+        .strategy-list {
+            list-style: none;
+            padding: 0;
+        }
+        .strategy-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .strategy-list li:last-child {
+            border-bottom: none;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .status-pending { background: #FFC107; }
+        .status-success { background: #4CAF50; }
+        .status-failed { background: #f44336; }
+        .status-testing { background: #2196F3; animation: pulse 1s infinite; }
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 CORS Bypass Testing - IPTV Portal Authentication</h1>
+        
+        <div class="test-section">
+            <h3>Portal Configuration</h3>
+            <div class="test-controls">
+                <input type="url" id="portalUrl" placeholder="Portal URL (e.g., http://play.b4u.live)" 
+                       value="http://play.b4u.live">
+                <input type="text" id="macAddress" placeholder="MAC Address" 
+                       value="AA:7A:10:57:C1:00" pattern="[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}">
+                <button id="testAllBtn">Test All Strategies</button>
+                <button id="clearLogsBtn">Clear Logs</button>
+            </div>
+            
+            <div class="test-controls">
+                <select id="portalSelect">
+                    <option value="http://play.b4u.live">play.b4u.live</option>
+                    <option value="http://glotv.me">glotv.me</option>
+                    <option value="http://play.suntv.biz">play.suntv.biz</option>
+                    <option value="http://tv.service8k.xyz">tv.service8k.xyz</option>
+                    <option value="custom">Custom URL...</option>
+                </select>
+                <select id="macSelect">
+                    <option value="AA:7A:10:57:C1:00">Provider MAC (AA:7A:10:57:C1:00)</option>
+                    <option value="00:1a:79:fc:28:ed">Random MAC (00:1a:79:fc:28:ed)</option>
+                    <option value="custom">Custom MAC...</option>
+                </select>
+                <button id="testSingleBtn">Test Selected Strategy</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>Authentication Strategies Status</h3>
+            <ul class="strategy-list" id="strategyList">
+                <li><span class="status-indicator status-pending"></span>Standard CORS fetch (VU IPTV compatible)</li>
+                <li><span class="status-indicator status-pending"></span>WebRTC data channel direct connection</li>
+                <li><span class="status-indicator status-pending"></span>JSONP callback authentication</li>
+                <li><span class="status-indicator status-pending"></span>Server-Sent Events streaming</li>
+                <li><span class="status-indicator status-pending"></span>Alternative portal endpoints</li>
+                <li><span class="status-indicator status-pending"></span>WebSocket bidirectional connection</li>
+                <li><span class="status-indicator status-pending"></span>Proxy server relay</li>
+                <li><span class="status-indicator status-pending"></span>No-CORS opaque response detection</li>
+                <li><span class="status-indicator status-pending"></span>Form submission bypass</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>Test Results</h3>
+            <div id="results" class="results">
+                <div class="log-entry log-info">Ready to test CORS bypass strategies...</div>
+                <div class="log-entry log-info">These strategies attempt to replicate VU IPTV and Smart STB behavior</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/webrtc-portal.js"></script>
+    <script src="js/diagnostics.js"></script>
+    <script src="js/mock-portal-test.js"></script>
+    <script>
+        class CORSBypassTester {
+            constructor() {
+                this.results = document.getElementById('results');
+                this.strategyIndicators = document.querySelectorAll('.strategy-list .status-indicator');
+                this.strategies = [
+                    'Standard CORS fetch',
+                    'WebRTC data channel',
+                    'JSONP callback',
+                    'Server-Sent Events',
+                    'Alternative endpoints',
+                    'WebSocket connection',
+                    'Proxy server relay',
+                    'No-CORS detection',
+                    'Form submission'
+                ];
+                this.setupEventListeners();
+                this.auth = new Auth();
+            }
+
+            setupEventListeners() {
+                document.getElementById('testAllBtn').addEventListener('click', () => this.testAllStrategies());
+                document.getElementById('testSingleBtn').addEventListener('click', () => this.testSingleStrategy());
+                document.getElementById('clearLogsBtn').addEventListener('click', () => this.clearLogs());
+                
+                document.getElementById('portalSelect').addEventListener('change', (e) => {
+                    if (e.target.value !== 'custom') {
+                        document.getElementById('portalUrl').value = e.target.value;
+                    }
+                });
+                
+                document.getElementById('macSelect').addEventListener('change', (e) => {
+                    if (e.target.value !== 'custom') {
+                        document.getElementById('macAddress').value = e.target.value;
+                    }
+                });
+            }
+
+            log(level, message) {
+                const entry = document.createElement('div');
+                entry.className = `log-entry log-${level}`;
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                this.results.appendChild(entry);
+                this.results.scrollTop = this.results.scrollHeight;
+            }
+
+            updateStrategyStatus(index, status) {
+                if (this.strategyIndicators[index]) {
+                    this.strategyIndicators[index].className = `status-indicator status-${status}`;
+                }
+            }
+
+            clearLogs() {
+                this.results.innerHTML = '<div class="log-entry log-info">Logs cleared. Ready for new tests...</div>';
+                this.strategyIndicators.forEach(indicator => {
+                    indicator.className = 'status-indicator status-pending';
+                });
+            }
+
+            async testAllStrategies() {
+                const portalUrl = document.getElementById('portalUrl').value;
+                const macAddress = document.getElementById('macAddress').value;
+
+                if (!portalUrl || !macAddress) {
+                    this.log('error', 'Please enter both portal URL and MAC address');
+                    return;
+                }
+
+                this.log('info', `Starting comprehensive CORS bypass test for ${portalUrl}`);
+                this.log('info', `Using MAC address: ${macAddress}`);
+                this.log('info', '='.repeat(60));
+
+                document.getElementById('testAllBtn').disabled = true;
+
+                try {
+                    const result = await this.auth.performHandshake(portalUrl + (portalUrl.endsWith('/') ? '' : '/') + 'stalker_portal/api/v1/', macAddress);
+                    
+                    if (result && result.token) {
+                        this.log('success', `✓ Authentication successful!`);
+                        this.log('success', `Token: ${result.token.substring(0, 20)}...`);
+                        this.log('success', `Connection type: ${result.connectionType || 'standard'}`);
+                        
+                        // Mark the successful strategy
+                        if (result.connectionType) {
+                            const index = this.getStrategyIndex(result.connectionType);
+                            if (index !== -1) {
+                                this.updateStrategyStatus(index, 'success');
+                            }
+                        }
+                    } else {
+                        this.log('error', 'Authentication returned invalid response');
+                    }
+                } catch (error) {
+                    this.log('error', `All strategies failed: ${error.message}`);
+                    
+                    // Mark all strategies as failed
+                    this.strategyIndicators.forEach((indicator, index) => {
+                        this.updateStrategyStatus(index, 'failed');
+                    });
+                }
+
+                document.getElementById('testAllBtn').disabled = false;
+                this.log('info', 'Test completed.');
+            }
+
+            async testSingleStrategy() {
+                // For now, this will test all strategies since they're integrated
+                await this.testAllStrategies();
+            }
+
+            getStrategyIndex(connectionType) {
+                const typeMap = {
+                    'standard': 0,
+                    'webrtc': 1,
+                    'jsonp': 2,
+                    'sse': 3,
+                    'alternative': 4,
+                    'websocket': 5,
+                    'proxy': 6,
+                    'no-cors': 7,
+                    'form': 8
+                };
+                return typeMap[connectionType] ?? -1;
+            }
+        }
+
+        // Initialize tester when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.corsTestr = new CORSBypassTester();
+        });
+    </script>
+</body>
+</html>
