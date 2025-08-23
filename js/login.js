@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add Generate MAC button
     addGenerateMACButton();
+    
+    // Add Portal URL suggestions
+    addPortalUrlSuggestions();
 
     // Form submission handler
     loginForm.addEventListener('submit', async function(e) {
@@ -146,9 +149,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (savedMac) {
                 macAddressInput.value = savedMac;
             } else {
-                // If no saved MAC, suggest virtual MAC
-                const virtualMAC = window.macGenerator.getVirtualMAC();
-                macAddressInput.placeholder = `Suggested: ${virtualMAC}`;
+                // Default to provider MAC for easy testing with specified credentials
+                const providerMAC = window.macGenerator.getProviderMAC();
+                macAddressInput.value = providerMAC;
+                macAddressInput.placeholder = `Provider MAC: ${providerMAC}`;
             }
         } catch (error) {
             console.error('Error loading saved values:', error);
@@ -221,6 +225,57 @@ document.addEventListener('DOMContentLoaded', function() {
         buttonContainer.appendChild(showSuggestionsBtn);
         
         macGroup.appendChild(buttonContainer);
+    }
+
+    // Add Portal URL suggestions
+    function addPortalUrlSuggestions() {
+        const portalGroup = portalUrlInput.parentNode;
+        
+        // Create button container for portal suggestions
+        const portalButtonContainer = document.createElement('div');
+        portalButtonContainer.style.marginTop = '10px';
+        portalButtonContainer.style.display = 'flex';
+        portalButtonContainer.style.gap = '5px';
+        portalButtonContainer.style.flexWrap = 'wrap';
+        
+        // Verified portal URLs (from the problem statement)
+        const verifiedPortals = [
+            { url: 'http://play.b4u.live', name: 'B4U Live' },
+            { url: 'http://glotv.me', name: 'GloTV' },
+            { url: 'http://play.suntv.biz', name: 'SunTV' }
+        ];
+        
+        // Create buttons for each verified portal
+        verifiedPortals.forEach(portal => {
+            const portalBtn = document.createElement('button');
+            portalBtn.type = 'button';
+            portalBtn.textContent = portal.name;
+            portalBtn.style.flex = '1';
+            portalBtn.style.fontSize = '12px';
+            portalBtn.style.padding = '6px';
+            portalBtn.style.backgroundColor = '#2196F3';
+            portalBtn.style.color = 'white';
+            portalBtn.style.border = 'none';
+            portalBtn.style.borderRadius = '3px';
+            portalBtn.style.cursor = 'pointer';
+            portalBtn.addEventListener('click', function() {
+                portalUrlInput.value = portal.url;
+                showSuccess(`Portal URL set to ${portal.name} (${portal.url})`);
+            });
+            
+            portalButtonContainer.appendChild(portalBtn);
+        });
+        
+        // Add label for portal suggestions
+        const portalLabel = document.createElement('div');
+        portalLabel.textContent = 'Verified Portal URLs:';
+        portalLabel.style.fontSize = '12px';
+        portalLabel.style.color = '#666';
+        portalLabel.style.marginTop = '10px';
+        portalLabel.style.marginBottom = '5px';
+        
+        portalGroup.appendChild(portalLabel);
+        portalGroup.appendChild(portalButtonContainer);
     }
 
     // Show MAC address suggestions
