@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginLoading = document.getElementById('loginLoading');
     const debugInfo = document.getElementById('debugInfo');
     const debugLog = document.getElementById('debugLog');
+    const debugToggleBtn = document.getElementById('debugToggleBtn');
 
     // Check if already logged in
     if (window.auth.isAuthenticated()) {
@@ -20,6 +21,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Set up debug callback for authentication
     window.auth.setDebugCallback(logDebug);
+    
+    // Debug toggle button handler
+    debugToggleBtn.addEventListener('click', function() {
+        const isVisible = debugInfo.style.display !== 'none';
+        showDebugInfo(!isVisible);
+        debugToggleBtn.textContent = isVisible ? 'Show Debug Info' : 'Hide Debug Info';
+    });
 
     // Load saved values and portals
     loadSavedValues();
@@ -84,8 +92,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show loading state
         showLoading(true);
         hideError();
-        showDebugInfo(true);
-        clearDebugLog();
+        
+        // Only show debug if it's already visible
+        const debugAlreadyVisible = debugInfo.style.display !== 'none';
+        if (debugAlreadyVisible) {
+            clearDebugLog();
+        }
+        
         logDebug('Starting authentication process...');
 
         try {
