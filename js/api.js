@@ -32,10 +32,13 @@ class StalkerAPI {
             url.searchParams.append(key, params[key]);
         });
 
+        const startTime = performance.now();
+        const headers = this.getHeaders();
+
         try {
             const response = await fetch(url.toString(), {
                 method: 'GET',
-                headers: this.getHeaders(),
+                headers: headers,
                 mode: 'cors'
             });
 
@@ -44,6 +47,20 @@ class StalkerAPI {
             }
 
             const data = await response.json();
+            const duration = Math.round(performance.now() - startTime);
+            
+            // Track API request for diagnostics
+            if (window.diagnostics) {
+                window.diagnostics.trackApiRequest(
+                    url.toString(),
+                    'GET',
+                    headers,
+                    params,
+                    data,
+                    null,
+                    duration
+                );
+            }
             
             if (data.js) {
                 return data.js;
@@ -51,6 +68,21 @@ class StalkerAPI {
                 return data;
             }
         } catch (error) {
+            const duration = Math.round(performance.now() - startTime);
+            
+            // Track failed API request for diagnostics
+            if (window.diagnostics) {
+                window.diagnostics.trackApiRequest(
+                    url.toString(),
+                    'GET',
+                    headers,
+                    params,
+                    null,
+                    error.message,
+                    duration
+                );
+            }
+            
             console.error('API request error:', error);
             if (error.message.includes('401') || error.message.includes('403')) {
                 // Token expired, logout user

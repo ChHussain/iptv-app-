@@ -51,20 +51,41 @@ class WebOSMediaPlayer {
             onbufferingstart: function() {
                 self.mediaState = 'buffering';
                 self.emit('buffering');
+                
+                // Update diagnostics
+                if (window.diagnostics) {
+                    window.diagnostics.updatePlayerStatus('buffering', self.currentStreamUrl);
+                }
             },
             onbufferingprogress: function(percent) {
                 self.emit('bufferingProgress', percent);
+                
+                // Update diagnostics with buffering progress
+                if (window.diagnostics) {
+                    window.diagnostics.updatePlayerStatus('buffering', self.currentStreamUrl, percent);
+                }
             },
             onbufferingcomplete: function() {
                 self.mediaState = 'playing';
                 self.emit('canplay');
+                
+                // Update diagnostics
+                if (window.diagnostics) {
+                    window.diagnostics.updatePlayerStatus('playing', self.currentStreamUrl);
+                }
             },
             oncurrentplaytime: function(currentTime) {
                 self.emit('timeupdate', currentTime);
             },
             onerror: function(eventType) {
                 self.mediaState = 'error';
-                self.emit('error', eventType);
+                const errorMsg = `AVPlay error: ${eventType}`;
+                self.emit('error', errorMsg);
+                
+                // Update diagnostics with error
+                if (window.diagnostics) {
+                    window.diagnostics.updatePlayerStatus('error', self.currentStreamUrl, 0, errorMsg);
+                }
             },
             onevent: function(eventType, eventData) {
                 self.handleAVPlayEvent(eventType, eventData);
@@ -72,6 +93,11 @@ class WebOSMediaPlayer {
             onstreamcompleted: function() {
                 self.mediaState = 'ended';
                 self.emit('ended');
+                
+                // Update diagnostics
+                if (window.diagnostics) {
+                    window.diagnostics.updatePlayerStatus('ended', self.currentStreamUrl);
+                }
             }
         });
     }
@@ -122,6 +148,17 @@ class WebOSMediaPlayer {
             url: streamUrl,
             type: mediaType
         };
+        
+        this.currentStreamUrl = streamUrl;
+
+        // Update diagnostics with stream preparation
+        if (window.diagnostics) {
+            window.diagnostics.updatePlayerStatus('preparing', streamUrl);
+            window.diagnostics.log('info', 'Preparing media stream', {
+                url: streamUrl,
+                type: mediaType
+            });
+        }
 
         try {
             if (window.webOS && window.webOS.media) {
@@ -133,6 +170,12 @@ class WebOSMediaPlayer {
             }
         } catch (error) {
             console.error('Failed to prepare media:', error);
+            
+            // Update diagnostics with error
+            if (window.diagnostics) {
+                window.diagnostics.updatePlayerStatus('error', streamUrl, 0, error.message);
+            }
+            
             throw error;
         }
     }

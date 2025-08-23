@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const autoplayCheckbox = document.getElementById('autoplay');
     const volumeSlider = document.getElementById('volume');
     const volumeValue = document.getElementById('volumeValue');
+    const themeSelect = document.getElementById('theme');
+    const debugModeCheckbox = document.getElementById('debugMode');
     const testConnectionBtn = document.getElementById('testConnectionBtn');
     const clearCacheBtn = document.getElementById('clearCacheBtn');
     const logoutBtn = document.getElementById('logoutBtn');
@@ -36,6 +38,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // Autoplay checkbox handler
     autoplayCheckbox.addEventListener('change', function() {
         savePlayerSetting('autoplay', this.checked);
+    });
+
+    // Theme selector handler
+    themeSelect.addEventListener('change', function() {
+        if (window.themeManager) {
+            window.themeManager.setTheme(this.value);
+        }
+    });
+
+    // Debug mode checkbox handler
+    debugModeCheckbox.addEventListener('change', function() {
+        if (window.diagnostics) {
+            window.diagnostics.enabled = this.checked;
+            window.diagnostics.saveSettings();
+            if (this.checked) {
+                window.diagnostics.log('info', 'Debug mode enabled from settings');
+            }
+        }
     });
 
     // Test connection button handler
@@ -109,6 +129,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const volume = Math.round(parseFloat(volumeSetting) * 100);
                 volumeSlider.value = volume;
                 volumeValue.textContent = volume + '%';
+            }
+
+            // Load theme setting
+            if (window.themeManager) {
+                themeSelect.value = window.themeManager.getCurrentTheme();
+            }
+
+            // Load debug mode setting
+            if (window.diagnostics) {
+                debugModeCheckbox.checked = window.diagnostics.isEnabled();
             }
         } catch (error) {
             console.error('Error loading player settings:', error);
