@@ -60,12 +60,27 @@ class Auth {
             const handshakeData = await this.performHandshake(normalizedUrl, macAddress);
             
             if (handshakeData && handshakeData.token) {
+                // Parse token expiry safely
+                let tokenExpiry;
+                if (handshakeData.token_expire) {
+                    // Try to parse as timestamp (seconds or milliseconds)
+                    const expireValue = parseInt(handshakeData.token_expire);
+                    if (expireValue > 0) {
+                        // If it's in seconds (typical for Unix timestamp), convert to milliseconds
+                        tokenExpiry = expireValue < 10000000000 ? expireValue * 1000 : expireValue;
+                    } else {
+                        tokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // Default 24 hours
+                    }
+                } else {
+                    tokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // Default 24 hours
+                }
+
                 const sessionData = {
                     token: handshakeData.token,
                     portalUrl: normalizedUrl,
                     macAddress: macAddress,
                     loginTime: Date.now(),
-                    tokenExpiry: handshakeData.token_expire || (Date.now() + 24 * 60 * 60 * 1000) // 24 hours default
+                    tokenExpiry: tokenExpiry
                 };
 
                 this.saveSession(sessionData);
