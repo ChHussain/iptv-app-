@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load saved values
     loadSavedValues();
 
+    // Add Generate MAC button
+    addGenerateMACButton();
+
     // Form submission handler
     loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -142,9 +145,95 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (savedMac) {
                 macAddressInput.value = savedMac;
+            } else {
+                // If no saved MAC, suggest virtual MAC
+                const virtualMAC = window.macGenerator.getVirtualMAC();
+                macAddressInput.placeholder = `Suggested: ${virtualMAC}`;
             }
         } catch (error) {
             console.error('Error loading saved values:', error);
         }
+    }
+
+    // Add Generate MAC button functionality
+    function addGenerateMACButton() {
+        const macGroup = macAddressInput.parentNode;
+        
+        // Create button container
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.marginTop = '10px';
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.gap = '10px';
+        
+        // Generate Virtual MAC button
+        const generateVirtualBtn = document.createElement('button');
+        generateVirtualBtn.type = 'button';
+        generateVirtualBtn.textContent = 'Use Virtual MAC';
+        generateVirtualBtn.style.flex = '1';
+        generateVirtualBtn.style.fontSize = '14px';
+        generateVirtualBtn.style.padding = '8px';
+        generateVirtualBtn.addEventListener('click', function() {
+            const virtualMAC = window.macGenerator.getVirtualMAC();
+            macAddressInput.value = virtualMAC;
+            showSuccess('Virtual MAC address generated and applied');
+        });
+        
+        // Generate Random MAC button
+        const generateRandomBtn = document.createElement('button');
+        generateRandomBtn.type = 'button';
+        generateRandomBtn.textContent = 'Generate Random';
+        generateRandomBtn.style.flex = '1';
+        generateRandomBtn.style.fontSize = '14px';
+        generateRandomBtn.style.padding = '8px';
+        generateRandomBtn.addEventListener('click', function() {
+            const randomMAC = window.macGenerator.generateMAC();
+            macAddressInput.value = randomMAC;
+            showSuccess('Random MAC address generated');
+        });
+        
+        // Show Suggestions button
+        const showSuggestionsBtn = document.createElement('button');
+        showSuggestionsBtn.type = 'button';
+        showSuggestionsBtn.textContent = 'Show Suggestions';
+        showSuggestionsBtn.style.flex = '1';
+        showSuggestionsBtn.style.fontSize = '14px';
+        showSuggestionsBtn.style.padding = '8px';
+        showSuggestionsBtn.addEventListener('click', showMACsuggestions);
+        
+        buttonContainer.appendChild(generateVirtualBtn);
+        buttonContainer.appendChild(generateRandomBtn);
+        buttonContainer.appendChild(showSuggestionsBtn);
+        
+        macGroup.appendChild(buttonContainer);
+    }
+
+    // Show MAC address suggestions
+    function showMACsuggestions() {
+        const suggestions = window.macGenerator.getSuggestedMACs();
+        
+        // Create modal or simple selection interface
+        let suggestionText = 'Suggested MAC addresses:\\n\\n';
+        suggestions.forEach((suggestion, index) => {
+            suggestionText += `${index + 1}. ${suggestion.mac} (${suggestion.description})\\n`;
+        });
+        suggestionText += '\\nClick on a button above to generate a MAC address, or enter your own.';
+        
+        alert(suggestionText);
+    }
+
+    // Show success message
+    function showSuccess(message) {
+        // Temporarily show success in the error div with different styling
+        const errorDiv = document.getElementById('loginError');
+        errorDiv.textContent = message;
+        errorDiv.style.backgroundColor = '#4CAF50';
+        errorDiv.style.color = 'white';
+        errorDiv.style.display = 'block';
+        
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+            errorDiv.style.backgroundColor = '';
+            errorDiv.style.color = '';
+        }, 3000);
     }
 });

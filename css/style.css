@@ -394,3 +394,252 @@ button:hover {
         gap: 10px;
     }
 }
+
+/* Favorites Styles */
+.favorites-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 10px;
+}
+
+.fav-tab-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.fav-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.fav-tab-btn.active {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    border-color: #4CAF50;
+}
+
+/* Favorite Button Styles */
+.content-item {
+    position: relative;
+}
+
+.favorite-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.favorite-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+}
+
+.favorite-btn.favorited {
+    color: #FFD700;
+    background: rgba(255, 215, 0, 0.2);
+}
+
+.favorite-btn.favorited:hover {
+    background: rgba(255, 215, 0, 0.3);
+}
+
+/* MAC Generator Styles */
+.mac-generator-container {
+    margin-top: 10px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mac-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.mac-suggestion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.mac-suggestion-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.mac-suggestion-text {
+    flex: 1;
+}
+
+.mac-suggestion-desc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 2px;
+}
+
+.mac-suggestion-btn {
+    background: #4CAF50;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+/* webOS Optimizations */
+.webos-optimized {
+    /* Focus styles for TV navigation */
+    outline: none;
+}
+
+.webos-optimized *:focus {
+    outline: 3px solid #4CAF50;
+    outline-offset: 2px;
+}
+
+/* TV Remote Navigation Hints */
+.remote-hints {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    z-index: 1000;
+}
+
+.remote-hints.hidden {
+    display: none;
+}
+
+/* Portal Manager Styles */
+.portal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.portal-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.portal-item.active {
+    border-color: #4CAF50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.portal-info h4 {
+    margin: 0 0 5px 0;
+    color: #fff;
+}
+
+.portal-info p {
+    margin: 0;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.portal-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.portal-actions button {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+/* EPG Specific Styles */
+.epg-timeline {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 1px;
+    background: #333;
+    margin: 20px 0;
+}
+
+.epg-channel {
+    background: #1e3c72;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+}
+
+.epg-programs {
+    display: flex;
+    background: #2a5298;
+}
+
+.epg-program {
+    padding: 10px;
+    border-right: 1px solid #333;
+    min-width: 150px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.epg-program:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.epg-program.current {
+    background: rgba(76, 175, 80, 0.3);
+}
+
+.epg-program-title {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.epg-program-time {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Success message styles */
+.success-message {
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid #4CAF50;
+    color: #c8e6c9;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+    text-align: center;
+}

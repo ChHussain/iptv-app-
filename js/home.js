@@ -22,8 +22,30 @@ document.addEventListener('DOMContentLoaded', function() {
     navBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             const section = this.dataset.section;
-            switchSection(section);
-            loadContent(section);
+            if (section) {
+                switchSection(section);
+                loadContent(section);
+            }
+        });
+    });
+
+    // EPG button handler
+    const epgBtn = document.getElementById('epgBtn');
+    epgBtn.addEventListener('click', function() {
+        window.location.href = 'epg.html';
+    });
+
+    // Favorites tab handlers
+    const favTabBtns = document.querySelectorAll('.fav-tab-btn');
+    favTabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Update active tab
+            favTabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Load favorites for selected type
+            const favType = this.dataset.favType;
+            loadFavorites(favType);
         });
     });
 
@@ -94,6 +116,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     renderSeries(data, containerElement);
                     break;
 
+                case 'favorites':
+                    // Load all favorites initially
+                    loadFavorites('all');
+                    return; // Don't show loading for favorites
+
                 default:
                     throw new Error('Unknown section: ' + section);
             }
@@ -115,11 +142,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         data.data.forEach(channel => {
+            const isFavorite = window.favoritesManager.isFavorite('channels', channel.id);
             const channelElement = createContentItem(
                 channel.name,
                 channel.logo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%23333"/><text x="50" y="50" text-anchor="middle" fill="white">TV</text></svg>',
                 channel.number ? `Channel ${channel.number}` : '',
-                () => playChannel(channel)
+                () => playChannel(channel),
+                isFavorite,
+                { ...channel, type: 'channels' }
             );
             container.appendChild(channelElement);
         });
@@ -134,11 +164,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         data.data.forEach(movie => {
+            const isFavorite = window.favoritesManager.isFavorite('movies', movie.id);
             const movieElement = createContentItem(
                 movie.name,
                 movie.screenshot_uri || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%23333"/><text x="50" y="50" text-anchor="middle" fill="white">🎬</text></svg>',
                 movie.year ? `Year: ${movie.year}` : '',
-                () => playMovie(movie)
+                () => playMovie(movie),
+                isFavorite,
+                { ...movie, type: 'movies' }
             );
             container.appendChild(movieElement);
         });
@@ -153,26 +186,124 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         data.data.forEach(series => {
+            const isFavorite = window.favoritesManager.isFavorite('series', series.id);
             const seriesElement = createContentItem(
                 series.name,
                 series.screenshot_uri || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%23333"/><text x="50" y="50" text-anchor="middle" fill="white">📺</text></svg>',
                 series.year ? `Year: ${series.year}` : '',
-                () => playSeries(series)
+                () => playSeries(series),
+                isFavorite,
+                { ...series, type: 'series' }
             );
             container.appendChild(seriesElement);
         });
     }
 
-    function createContentItem(title, imageUrl, subtitle, clickHandler) {
-        const item = document.createElement('div');
-        item.className = 'content-item';
-        item.innerHTML = `
+    function createContentItem(title, imageUrl, subtitle, clickHandler, isFavorite = false, item = null) {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'content-item';
+        
+        // Add favorite button if item data is provided
+        const favoriteBtn = item ? createFavoriteButton(item, isFavorite) : '';
+        
+        itemDiv.innerHTML = `
             <img src="${imageUrl}" alt="${title}" onerror="this.src='data:image/svg+xml,<svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"100\\" height=\\"100\\"><rect width=\\"100\\" height=\\"100\\" fill=\\"%23333\\"/><text x=\\"50\\" y=\\"50\\" text-anchor=\\"middle\\" fill=\\"white\\">📺</text></svg>'">
             <h4>${title}</h4>
             <p>${subtitle}</p>
+            ${favoriteBtn}
         `;
-        item.addEventListener('click', clickHandler);
-        return item;
+        
+        itemDiv.addEventListener('click', function(e) {
+            // Don't trigger play if clicking on favorite button
+            if (e.target.classList.contains('favorite-btn')) {
+                return;
+            }
+            clickHandler();
+        });
+        
+        return itemDiv;
+    }
+
+    function createFavoriteButton(item, isFavorite) {
+        const buttonClass = isFavorite ? 'favorite-btn favorited' : 'favorite-btn';
+        const buttonText = isFavorite ? '⭐' : '☆';
+        
+        return `<button class="${buttonClass}" onclick="toggleFavorite(event, this, '${item.type || 'channel'}', ${JSON.stringify(item).replace(/"/g, '&quot;')})">${buttonText}</button>`;
+    }
+
+    // Make toggleFavorite available globally
+    window.toggleFavorite = function(event, button, type, itemData) {
+        event.stopPropagation();
+        
+        const item = typeof itemData === 'string' ? JSON.parse(itemData) : itemData;
+        const isCurrentlyFavorite = button.classList.contains('favorited');
+        
+        if (window.favoritesManager.toggleFavorite(type, item)) {
+            // Toggle button appearance
+            if (isCurrentlyFavorite) {
+                button.classList.remove('favorited');
+                button.textContent = '☆';
+            } else {
+                button.classList.add('favorited');
+                button.textContent = '⭐';
+            }
+            
+            // Refresh favorites view if currently viewing favorites
+            const activeSection = document.querySelector('.content-section.active');
+            if (activeSection && activeSection.id === 'favorites') {
+                const activeTab = document.querySelector('.fav-tab-btn.active');
+                if (activeTab) {
+                    loadFavorites(activeTab.dataset.favType);
+                }
+            }
+        }
+    };
+
+    function loadFavorites(type = 'all') {
+        const container = document.getElementById('favoritesList');
+        
+        try {
+            let favorites = [];
+            
+            if (type === 'all') {
+                favorites = window.favoritesManager.getAllFavorites();
+            } else {
+                favorites = window.favoritesManager.getFavorites(type);
+            }
+            
+            if (favorites.length === 0) {
+                container.innerHTML = `<p>No ${type === 'all' ? '' : type} favorites yet. Add some by clicking the star (☆) on any content!</p>`;
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            favorites.forEach(favorite => {
+                const item = favorite.data;
+                const itemElement = createContentItem(
+                    item.name,
+                    item.logo || item.screenshot_uri || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%23333"/><text x="50" y="50" text-anchor="middle" fill="white">⭐</text></svg>',
+                    `${favorite.type.charAt(0).toUpperCase() + favorite.type.slice(1)} • Added ${new Date(favorite.addedDate).toLocaleDateString()}`,
+                    () => playFavoriteItem(favorite),
+                    true,
+                    { ...item, type: favorite.type }
+                );
+                container.appendChild(itemElement);
+            });
+            
+        } catch (error) {
+            console.error('Error loading favorites:', error);
+            container.innerHTML = '<p>Error loading favorites.</p>';
+        }
+    }
+
+    function playFavoriteItem(favorite) {
+        const params = new URLSearchParams({
+            type: favorite.type,
+            id: favorite.id,
+            name: favorite.data.name
+        });
+        window.location.href = `player.html?${params.toString()}`;
     }
 
     function playChannel(channel) {

@@ -1,16 +1,28 @@
-# IPTV Application
+# LG webOS 6.0.0 IPTV Application
 
-A modern IPTV application that works with Stalker portal middleware, similar to Smart STB and VU+ IP TV Player.
+A production-ready IPTV application specifically designed for LG webOS 6.0.0 that emulates a MAG-based Stalker Portal (like Smart STB or Vu IPTV Player).
 
 ## Features
 
-- **Proper Login Flow**: Starts with login page for portal URL and MAC address input
-- **Stalker Portal Integration**: Compatible with Stalker middleware APIs
-- **Live TV Channels**: Browse and play live television channels
-- **Movies & Series**: Access VOD content including movies and TV series
-- **Responsive Design**: Works on desktop and mobile devices
-- **Session Management**: Secure authentication and session handling
-- **Settings Panel**: Configure player preferences and view connection status
+- **LG webOS 6.0.0 Compatibility**: Native integration with webOS media APIs (webOS.media and AVPlay)
+- **Stalker Portal Authentication**: MAC address + Portal URL login (Stalker middleware style)
+- **MAC Address Management**: Auto-generate virtual MAC or manually input custom MAC addresses
+- **Multi-Portal Support**: Manage and switch between multiple IPTV portals
+- **Content Streaming**: Live TV channels, Movies, TV Series with webOS-optimized playback
+- **Electronic Program Guide (EPG)**: Timeline view with current and upcoming programs
+- **Favorites Management**: Save and organize favorite channels, movies, and series
+- **TV Remote Navigation**: Optimized for LG TV remote control with full keyboard support
+- **Session Management**: Secure authentication with automatic token refresh
+- **Error Handling**: Comprehensive error handling for portal timeouts and stream failures
+
+## webOS 6.0.0 Specific Features
+
+- **Native Media Player**: Uses webOS.media API for optimal video playback
+- **AVPlay Fallback**: Automatic fallback to AVPlay for compatibility
+- **Remote Control Support**: Full support for LG TV remote including color keys and navigation
+- **TV-Optimized UI**: Interface designed specifically for television displays
+- **Focus Management**: Proper focus handling for TV navigation
+- **System Integration**: Integrates with webOS system volume and display controls
 
 ## Getting Started
 

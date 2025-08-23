@@ -1,21 +1,37 @@
 {
-  "name": "iptv-app",
+  "name": "webos-iptv-app",
   "version": "1.0.0",
-  "description": "IPTV application that works with Stalker portal like Smart STB",
+  "description": "IPTV application for LG webOS 6.0.0 that emulates MAG-based Stalker Portal",
   "main": "index.html",
   "scripts": {
     "start": "python3 -m http.server 8080",
     "dev": "python3 -m http.server 8080",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\" && exit 0",
+    "webos-package": "ares-package .",
+    "webos-install": "ares-install *.ipk",
+    "webos-launch": "ares-launch webos-iptv-app"
   },
   "keywords": [
     "iptv",
     "stalker",
     "smart-stb",
-    "streaming"
+    "streaming",
+    "webos",
+    "lg-tv",
+    "mag-emulator",
+    "electronic-program-guide",
+    "favorites"
   ],
   "author": "IPTV App Developer",
   "license": "MIT",
+  "webos": {
+    "target": "webos-6.0.0",
+    "features": [
+      "media-player",
+      "network",
+      "storage"
+    ]
+  },
   "devDependencies": {},
   "dependencies": {}
 }
