@@ -271,8 +271,8 @@ class Auth {
                 console.log('✗ No-CORS handshake failed:', noCorsError.message);
             }
             
-            // All strategies failed, provide comprehensive error message
-            const errorMessage = `All authentication strategies failed for portal ${portalUrl}. Attempted methods:
+            // All strategies failed - log detailed info for developers but show user-friendly message
+            const technicalDetails = `All authentication strategies failed for portal ${portalUrl}. Attempted methods:
 1. Standard CORS fetch (VU IPTV compatible headers)
 2. WebRTC data channel direct connection
 3. JSONP callback authentication  
@@ -290,7 +290,13 @@ This portal may require:
 - Portal administrator whitelist addition
 - Alternative authentication method`;
 
-            throw new Error(errorMessage);
+            // Log technical details for developers
+            console.error('Technical details:', technicalDetails);
+            
+            // Provide user-friendly error message
+            const userFriendlyMessage = 'Unable to connect to the portal. Please check your portal URL and try again. If the problem persists, contact your service provider.';
+            
+            throw new Error(userFriendlyMessage);
         }
     }
 
