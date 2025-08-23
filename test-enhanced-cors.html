@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced CORS Bypass Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-form {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+        input, select, button {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .log-info { background: #d1ecf1; color: #0c5460; }
+        .log-success { background: #d4edda; color: #155724; }
+        .log-warning { background: #fff3cd; color: #856404; }
+        .log-error { background: #f8d7da; color: #721c24; }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .status-card {
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .status-pending { background: #e2e3e5; color: #383d41; }
+        .status-running { background: #bee5eb; color: #0c5460; }
+        .status-success { background: #d4edda; color: #155724; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Enhanced CORS Bypass Testing</h1>
+        <p>Test the enhanced authentication system with specified portal URLs and MAC address</p>
+        
+        <div class="test-form">
+            <div class="form-row">
+                <label>Portal URL:</label>
+                <select id="portalUrl">
+                    <option value="http://play.b4u.live">http://play.b4u.live</option>
+                    <option value="http://glotv.me">http://glotv.me</option>
+                    <option value="http://play.suntv.biz">http://play.suntv.biz</option>
+                    <option value="custom">Custom URL...</option>
+                </select>
+            </div>
+            <div class="form-row" id="customUrlRow" style="display: none;">
+                <label>Custom URL:</label>
+                <input type="url" id="customUrl" placeholder="http://your-portal.com">
+            </div>
+            <div class="form-row">
+                <label>MAC Address:</label>
+                <input type="text" id="macAddress" value="AA:7A:10:57:C1:00" placeholder="AA:BB:CC:DD:EE:FF">
+            </div>
+            <div class="form-row">
+                <label>Test Mode:</label>
+                <select id="testMode">
+                    <option value="comprehensive">Comprehensive (All Strategies)</option>
+                    <option value="priority">Priority (Fast Strategies First)</option>
+                    <option value="proxy-only">Proxy Server Only</option>
+                    <option value="webrtc-only">WebRTC Only</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label></label>
+                <button id="startTest" onclick="startTest()">🚀 Start Enhanced Test</button>
+            </div>
+        </div>
+
+        <div class="status-grid" id="strategyStatus">
+            <div class="status-card status-pending">Standard CORS</div>
+            <div class="status-card status-pending">Enhanced Proxy</div>
+            <div class="status-card status-pending">Parameter Variants</div>
+            <div class="status-card status-pending">Form Submission</div>
+            <div class="status-card status-pending">No-CORS Detection</div>
+            <div class="status-card status-pending">WebRTC Direct</div>
+            <div class="status-card status-pending">JSONP Callback</div>
+            <div class="status-card status-pending">Server-Sent Events</div>
+            <div class="status-card status-pending">WebSocket</div>
+            <div class="status-card status-pending">Alternative Endpoints</div>
+        </div>
+
+        <div class="results" id="results">
+            <div class="log-entry log-info">Ready to test enhanced CORS bypass strategies with specified portals...</div>
+            <div class="log-entry log-info">This test will attempt connection to real IPTV portals using the provider MAC address</div>
+            <div class="log-entry log-warning">Note: Success depends on portal accessibility and configuration</div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/webrtc-portal.js"></script>
+    <script src="js/diagnostics.js"></script>
+    
+    <script>
+        // Initialize components
+        let auth;
+        let testing = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            auth = new Auth();
+            
+            // Handle custom URL selection
+            document.getElementById('portalUrl').addEventListener('change', (e) => {
+                const customRow = document.getElementById('customUrlRow');
+                customRow.style.display = e.target.value === 'custom' ? 'grid' : 'none';
+            });
+        });
+
+        function getPortalUrl() {
+            const select = document.getElementById('portalUrl');
+            if (select.value === 'custom') {
+                return document.getElementById('customUrl').value;
+            }
+            return select.value;
+        }
+
+        function log(type, message) {
+            const results = document.getElementById('results');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(entry);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function updateStrategyStatus(strategyIndex, status) {
+            const cards = document.querySelectorAll('.status-card');
+            if (cards[strategyIndex]) {
+                cards[strategyIndex].className = `status-card status-${status}`;
+            }
+        }
+
+        async function startTest() {
+            if (testing) return;
+            
+            testing = true;
+            const button = document.getElementById('startTest');
+            button.disabled = true;
+            button.textContent = '🔄 Testing...';
+
+            const portalUrl = getPortalUrl();
+            const macAddress = document.getElementById('macAddress').value;
+            const testMode = document.getElementById('testMode').value;
+
+            if (!portalUrl || !macAddress) {
+                log('error', 'Please provide both portal URL and MAC address');
+                testing = false;
+                button.disabled = false;
+                button.textContent = '🚀 Start Enhanced Test';
+                return;
+            }
+
+            log('info', `Starting enhanced test with ${portalUrl}`);
+            log('info', `MAC Address: ${macAddress}`);
+            log('info', `Test Mode: ${testMode}`);
+
+            // Reset all strategy status
+            for (let i = 0; i < 10; i++) {
+                updateStrategyStatus(i, 'pending');
+            }
+
+            try {
+                // Test based on mode
+                switch (testMode) {
+                    case 'comprehensive':
+                        await testComprehensive(portalUrl, macAddress);
+                        break;
+                    case 'priority':
+                        await testPriority(portalUrl, macAddress);
+                        break;
+                    case 'proxy-only':
+                        await testProxyOnly(portalUrl, macAddress);
+                        break;
+                    case 'webrtc-only':
+                        await testWebRTCOnly(portalUrl, macAddress);
+                        break;
+                }
+            } catch (error) {
+                log('error', `Test failed: ${error.message}`);
+            }
+
+            testing = false;
+            button.disabled = false;
+            button.textContent = '🚀 Start Enhanced Test';
+        }
+
+        async function testComprehensive(portalUrl, macAddress) {
+            log('info', 'Starting comprehensive authentication test...');
+            
+            try {
+                const result = await auth.login(portalUrl, macAddress);
+                if (result.success) {
+                    log('success', `✅ Authentication successful!`);
+                    log('success', `Token received: ${result.session.token.substring(0, 20)}...`);
+                    log('success', `Portal: ${result.session.portalUrl}`);
+                } else {
+                    log('error', `❌ Authentication failed: ${result.error}`);
+                }
+            } catch (error) {
+                log('error', `❌ Comprehensive test failed: ${error.message}`);
+            }
+        }
+
+        async function testPriority(portalUrl, macAddress) {
+            log('info', 'Starting priority-based test (proxy first)...');
+            
+            // Test proxy first (most likely to work)
+            updateStrategyStatus(1, 'running');
+            try {
+                const result = await auth.performProxyHandshake(auth.normalizePortalUrl(portalUrl) + 'stalker_portal/api/v1/handshake', macAddress);
+                updateStrategyStatus(1, 'success');
+                log('success', '✅ Enhanced proxy authentication successful!');
+                return;
+            } catch (error) {
+                updateStrategyStatus(1, 'failed');
+                log('warning', `Proxy failed: ${error.message}`);
+            }
+
+            // Fall back to standard CORS
+            updateStrategyStatus(0, 'running');
+            try {
+                const result = await auth.performStandardHandshake(auth.normalizePortalUrl(portalUrl) + 'stalker_portal/api/v1/handshake', macAddress);
+                updateStrategyStatus(0, 'success');
+                log('success', '✅ Standard CORS authentication successful!');
+                return;
+            } catch (error) {
+                updateStrategyStatus(0, 'failed');
+                log('warning', `Standard CORS failed: ${error.message}`);
+            }
+
+            log('error', 'Priority strategies failed');
+        }
+
+        async function testProxyOnly(portalUrl, macAddress) {
+            log('info', 'Testing enhanced proxy server only...');
+            updateStrategyStatus(1, 'running');
+            
+            try {
+                const normalizedUrl = auth.normalizePortalUrl(portalUrl);
+                const result = await auth.performProxyHandshake(normalizedUrl + 'stalker_portal/api/v1/handshake', macAddress);
+                updateStrategyStatus(1, 'success');
+                log('success', '✅ Enhanced proxy server authentication successful!');
+                log('info', `Response: ${JSON.stringify(result, null, 2)}`);
+            } catch (error) {
+                updateStrategyStatus(1, 'failed');
+                log('error', `❌ Enhanced proxy server failed: ${error.message}`);
+            }
+        }
+
+        async function testWebRTCOnly(portalUrl, macAddress) {
+            log('info', 'Testing WebRTC direct connection only...');
+            updateStrategyStatus(5, 'running');
+            
+            try {
+                if (window.WebRTCPortalConnection) {
+                    const webrtc = new WebRTCPortalConnection();
+                    const result = await webrtc.createDirectConnection(portalUrl, macAddress);
+                    updateStrategyStatus(5, 'success');
+                    log('success', '✅ WebRTC direct connection successful!');
+                    log('info', `Response: ${JSON.stringify(result, null, 2)}`);
+                } else {
+                    updateStrategyStatus(5, 'failed');
+                    log('error', '❌ WebRTC not available in this browser');
+                }
+            } catch (error) {
+                updateStrategyStatus(5, 'failed');
+                log('error', `❌ WebRTC direct connection failed: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
