@@ -4,8 +4,9 @@
   "description": "IPTV application for LG webOS 6.0.0 that emulates MAG-based Stalker Portal",
   "main": "index.html",
   "scripts": {
-    "start": "python3 -m http.server 8080",
-    "dev": "python3 -m http.server 8080",
+    "start": "python3 proxy-server.py 8080",
+    "dev": "python3 proxy-server.py 8080",
+    "dev-basic": "python3 -m http.server 8080",
     "test": "echo \"No tests specified\" && exit 0",
     "webos-package": "ares-package .",
     "webos-install": "ares-install *.ipk",
