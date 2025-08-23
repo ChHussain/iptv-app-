@@ -22,6 +22,7 @@
                         <input type="text" id="macAddress" name="macAddress" required 
                                placeholder="00:1a:79:xx:xx:xx" pattern="[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}">
                         <button type="button" id="generateMacBtn" class="btn-secondary">Generate</button>
+                        <button type="button" id="generateVuMacBtn" class="btn-secondary">VU+ MAC</button>
                     </div>
                 </div>
                 
@@ -30,9 +31,16 @@
                     <div id="savedPortals" class="saved-portals"></div>
                 </div>
                 <button type="submit" id="loginBtn">Connect</button>
+                <button type="button" id="debugToggleBtn" class="btn-secondary" style="margin-top: 10px; width: 100%;">Show Debug Info</button>
             </form>
             <div id="loginError" class="error-message" style="display: none;"></div>
             <div id="loginLoading" class="loading" style="display: none;">Connecting...</div>
+            
+            <!-- Debug information panel -->
+            <div id="debugInfo" class="debug-info" style="display: none; margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 5px; font-size: 12px; color: #333; max-height: 300px; overflow-y: auto;">
+                <h4 style="color: #333; margin-bottom: 10px;">Authentication Attempts:</h4>
+                <div id="debugLog"></div>
+            </div>
         </div>
     </div>
     <script src="js/auth.js"></script>

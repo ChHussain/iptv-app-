@@ -4,16 +4,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const portalUrlInput = document.getElementById('portalUrl');
     const macAddressInput = document.getElementById('macAddress');
     const generateMacBtn = document.getElementById('generateMacBtn');
+    const generateVuMacBtn = document.getElementById('generateVuMacBtn');
     const savedPortalsDiv = document.getElementById('savedPortals');
     const loginBtn = document.getElementById('loginBtn');
     const loginError = document.getElementById('loginError');
     const loginLoading = document.getElementById('loginLoading');
+    const debugInfo = document.getElementById('debugInfo');
+    const debugLog = document.getElementById('debugLog');
+    const debugToggleBtn = document.getElementById('debugToggleBtn');
 
     // Check if already logged in
     if (window.auth.isAuthenticated()) {
         window.location.href = 'home.html';
         return;
     }
+
+    // Set up debug callback for authentication
+    window.auth.setDebugCallback(logDebug);
+    
+    // Debug toggle button handler
+    debugToggleBtn.addEventListener('click', function() {
+        const isVisible = debugInfo.style.display !== 'none';
+        showDebugInfo(!isVisible);
+        debugToggleBtn.textContent = isVisible ? 'Show Debug Info' : 'Hide Debug Info';
+    });
 
     // Load saved values and portals
     loadSavedValues();
@@ -23,6 +37,27 @@ document.addEventListener('DOMContentLoaded', function() {
     generateMacBtn.addEventListener('click', function() {
         const generatedMAC = window.auth.generateVirtualMAC();
         macAddressInput.value = generatedMAC;
+        showSuccess('MAC address generated');
+    });
+
+    // Generate VU+ specific MAC button handler
+    generateVuMacBtn.addEventListener('click', function() {
+        // Generate a VU+ specific MAC with known prefixes
+        const vuPrefixes = ['00:1b:c5', '00:0f:ea', '00:50:c2'];
+        const chars = '0123456789abcdef';
+        const prefix = vuPrefixes[Math.floor(Math.random() * vuPrefixes.length)];
+        
+        let mac = prefix + ':';
+        for (let i = 0; i < 6; i++) {
+            if (i > 0 && i % 2 === 0) {
+                mac += ':';
+            }
+            mac += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        
+        macAddressInput.value = mac;
+        showSuccess('VU+ compatible MAC address generated');
+        logDebug(`Generated VU+ MAC with prefix ${prefix}`);
     });
 
     // Form submission handler
@@ -57,23 +92,61 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show loading state
         showLoading(true);
         hideError();
+        
+        // Only show debug if it's already visible
+        const debugAlreadyVisible = debugInfo.style.display !== 'none';
+        if (debugAlreadyVisible) {
+            clearDebugLog();
+        }
+        
+        logDebug('Starting authentication process...');
 
         try {
             // Attempt login
+            console.log('Attempting login with:', { portalUrl, macAddress });
+            logDebug(`Portal URL: ${portalUrl}`);
+            logDebug(`MAC Address: ${macAddress}`);
+            
             const result = await window.auth.login(portalUrl, macAddress);
 
             if (result.success) {
                 // Save values for next time
                 saveValues(portalUrl, macAddress);
                 
-                // Redirect to home page
-                window.location.href = 'home.html';
+                // Show success message briefly before redirect
+                logDebug('✓ Login successful! Redirecting...');
+                showSuccess('Login successful! Redirecting...');
+                
+                // Hide debug info on success
+                setTimeout(() => {
+                    showDebugInfo(false);
+                }, 2000);
+                
+                // Redirect to home page after a short delay
+                setTimeout(() => {
+                    window.location.href = 'home.html';
+                }, 1000);
             } else {
-                showError(result.error || 'Login failed. Please check your portal URL and MAC address.');
+                const errorMsg = result.error || 'Login failed. Please check your portal URL and MAC address.';
+                console.error('Login failed:', result);
+                logDebug(`✗ Login failed: ${errorMsg}`);
+                showError(errorMsg);
             }
         } catch (error) {
             console.error('Login error:', error);
-            showError('Connection failed. Please check your internet connection and try again.');
+            let errorMsg = 'Connection failed. Please check your internet connection and try again.';
+            
+            // Provide more specific error messages
+            if (error.message.includes('CORS')) {
+                errorMsg = 'Portal access blocked by browser security. Try using a different portal URL or contact your provider.';
+            } else if (error.message.includes('fetch')) {
+                errorMsg = 'Cannot connect to portal. Please check the portal URL and your internet connection.';
+            } else if (error.message.includes('token')) {
+                errorMsg = 'Authentication failed. Please verify your MAC address and portal URL.';
+            }
+            
+            logDebug(`✗ Connection error: ${errorMsg}`);
+            showError(errorMsg);
         } finally {
             showLoading(false);
         }
@@ -121,6 +194,42 @@ document.addEventListener('DOMContentLoaded', function() {
             loginBtn.disabled = false;
             loginBtn.textContent = 'Connect';
         }
+    }
+
+    function showSuccess(message) {
+        loginError.textContent = message;
+        loginError.style.display = 'block';
+        loginError.style.backgroundColor = '#4CAF50';
+        loginError.style.color = 'white';
+        loginError.style.border = '1px solid #45a049';
+        
+        // Reset styles after a few seconds
+        setTimeout(() => {
+            loginError.style.backgroundColor = '';
+            loginError.style.color = '';
+            loginError.style.border = '';
+        }, 3000);
+    }
+
+    function showDebugInfo(show) {
+        if (debugInfo) {
+            debugInfo.style.display = show ? 'block' : 'none';
+        }
+    }
+
+    function clearDebugLog() {
+        if (debugLog) {
+            debugLog.innerHTML = '';
+        }
+    }
+
+    function logDebug(message) {
+        if (debugLog) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+        console.log('[DEBUG]', message);
     }
 
     function isValidMacAddress(mac) {

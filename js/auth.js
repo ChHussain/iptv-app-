@@ -5,6 +5,20 @@ class Auth {
         this.portalsKey = 'iptv_portals';
         this.session = this.loadSession();
         this.portals = this.loadPortals();
+        this.debugCallback = null; // For UI debugging
+    }
+
+    // Set debug callback for UI logging
+    setDebugCallback(callback) {
+        this.debugCallback = callback;
+    }
+
+    // Debug log that can be sent to UI
+    debugLog(message) {
+        console.log('[AUTH]', message);
+        if (this.debugCallback) {
+            this.debugCallback(message);
+        }
     }
 
     // Load session from localStorage
@@ -71,11 +85,24 @@ class Auth {
         return this.portals;
     }
 
-    // Generate a virtual MAC address
+    // Generate a virtual MAC address with VU+ compatibility
     generateVirtualMAC() {
         const chars = '0123456789ABCDEF';
-        let mac = '00:1A:79:'; // Common prefix for virtual MACs
         
+        // VU+ and STB compatible MAC prefixes
+        const macPrefixes = [
+            '00:1A:79', // Common virtual MAC prefix
+            '00:1B:C5', // VU+ compatible prefix  
+            '00:0F:EA', // Another VU+ prefix
+            '00:50:C2', // STB compatible prefix
+            '00:09:34', // Alternative STB prefix
+        ];
+        
+        // Choose a random prefix for better compatibility
+        const prefix = macPrefixes[Math.floor(Math.random() * macPrefixes.length)];
+        let mac = prefix + ':';
+        
+        // Generate the remaining 3 octets
         for (let i = 0; i < 6; i++) {
             if (i > 0 && i % 2 === 0) {
                 mac += ':';
@@ -83,7 +110,7 @@ class Auth {
             mac += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         
-        return mac;
+        return mac.toLowerCase(); // VU+ systems often prefer lowercase MACs
     }
 
     // Validate MAC address format
@@ -134,9 +161,16 @@ class Auth {
         if (!this.session) throw new Error('No active session');
         
         const keepAliveUrl = `${this.session.portalUrl}watchdog`;
+        
+        // Use stored device configuration or fall back to MAG250
+        const deviceConfig = this.session.deviceConfig || {
+            userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
+            xUserAgent: 'Model: MAG250; Link: WiFi'
+        };
+        
         const headers = {
-            'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
-            'X-User-Agent': 'Model: MAG250; Link: WiFi',
+            'User-Agent': deviceConfig.userAgent,
+            'X-User-Agent': deviceConfig.xUserAgent,
             'Authorization': `Bearer ${this.session.token}`,
             'Cookie': `mac=${this.session.macAddress}; stb_lang=en; timezone=Europe/Kiev;`
         };
@@ -169,28 +203,26 @@ class Auth {
     // Login with portal URL and MAC address
     async login(portalUrl, macAddress) {
         try {
-            // Normalize portal URL
-            const normalizedUrl = this.normalizePortalUrl(portalUrl);
+            // Try multiple portal URL variations for better compatibility
+            const result = await this.tryMultiplePortalUrls(portalUrl, macAddress);
             
-            // Create handshake request
-            const handshakeData = await this.performHandshake(normalizedUrl, macAddress);
-            
-            if (handshakeData && handshakeData.token) {
+            if (result.success && result.data.token) {
                 const sessionData = {
-                    token: handshakeData.token,
-                    portalUrl: normalizedUrl,
+                    token: result.data.token,
+                    portalUrl: result.portalUrl, // Use the successful portal URL
                     macAddress: macAddress,
                     loginTime: Date.now(),
-                    tokenExpiry: handshakeData.token_expire || (Date.now() + 24 * 60 * 60 * 1000) // 24 hours default
+                    tokenExpiry: result.data.token_expire || (Date.now() + 24 * 60 * 60 * 1000), // 24 hours default
+                    deviceConfig: result.data.deviceConfig // Store successful device configuration
                 };
 
                 this.saveSession(sessionData);
                 
                 // Save portal for future use
                 this.addPortal({
-                    url: normalizedUrl,
+                    url: result.portalUrl, // Use the successful portal URL
                     macAddress: macAddress,
-                    name: this.extractPortalName(normalizedUrl),
+                    name: this.extractPortalName(result.portalUrl),
                     lastUsed: Date.now()
                 });
                 
@@ -207,7 +239,7 @@ class Auth {
         }
     }
 
-    // Normalize portal URL
+    // Normalize portal URL with multiple fallback strategies
     normalizePortalUrl(url) {
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
             url = 'http://' + url;
@@ -217,15 +249,70 @@ class Auth {
             url += '/';
         }
         
-        if (!url.includes('/stalker_portal/api/')) {
-            if (url.endsWith('/')) {
-                url += 'stalker_portal/api/v1/';
-            } else {
-                url += '/stalker_portal/api/v1/';
-            }
+        // If URL already has API path, use it as-is
+        if (url.includes('/stalker_portal/api/')) {
+            return url;
+        }
+        
+        // If URL has /api/ but not stalker_portal, try to normalize
+        if (url.includes('/api/')) {
+            return url;
+        }
+        
+        // Default: add stalker_portal/api/v1/ path
+        if (url.endsWith('/')) {
+            url += 'stalker_portal/api/v1/';
+        } else {
+            url += '/stalker_portal/api/v1/';
         }
         
         return url;
+    }
+
+    // Try multiple portal URL variations for better compatibility
+    async tryMultiplePortalUrls(baseUrl, macAddress) {
+        const urlVariations = [
+            // Direct URL as provided
+            baseUrl,
+            // Add stalker_portal/api/v1/ if not present
+            this.normalizePortalUrl(baseUrl),
+            // Try without version number
+            baseUrl.replace('/stalker_portal/api/v1/', '/stalker_portal/api/'),
+            // Try c/ endpoint (some portals use this)
+            baseUrl.replace('/stalker_portal/api/v1/', '/c/'),
+            // Try direct API without stalker_portal
+            baseUrl.replace('/stalker_portal/api/v1/', '/api/v1/'),
+            // Try portal/ endpoint (some VU+ compatible portals)
+            baseUrl.replace('/stalker_portal/api/v1/', '/portal/'),
+            // Try api/ endpoint only
+            baseUrl.replace('/stalker_portal/api/v1/', '/api/'),
+            // Try with server_api.php (some old portals)
+            baseUrl.replace('/stalker_portal/api/v1/', '/server_api.php'),
+            // Try without any API path (direct portal)
+            baseUrl.replace('/stalker_portal/api/v1/', '/'),
+        ];
+        
+        // Remove duplicates while preserving order
+        const uniqueUrls = [...new Set(urlVariations)];
+        
+        let lastError = null;
+        
+        for (const portalUrl of uniqueUrls) {
+            try {
+                this.debugLog(`Trying portal URL: ${portalUrl}`);
+                const result = await this.performHandshake(portalUrl, macAddress);
+                if (result && result.token) {
+                    this.debugLog(`✓ Success with portal URL: ${portalUrl}`);
+                    return { success: true, data: result, portalUrl: portalUrl };
+                }
+            } catch (error) {
+                this.debugLog(`✗ Failed with portal URL ${portalUrl}: ${error.message}`);
+                lastError = error;
+                continue;
+            }
+        }
+        
+        throw lastError || new Error('All portal URL variations failed');
     }
 
     // Extract portal name from URL for display
@@ -238,43 +325,127 @@ class Auth {
         }
     }
 
-    // Perform handshake with Stalker portal
+    // Get authentication configurations for different device types
+    getAuthConfigurations() {
+        return [
+            // VU+ configuration (commonly used by VU IPTV players)
+            {
+                name: 'VU+ STB',
+                userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) VU+ STB stbapp ver: 4 rev: 9493 Safari/533.3',
+                xUserAgent: 'Model: VU+; Link: WiFi',
+                deviceModel: 'VU+'
+            },
+            // VU+ Solo2 (specific VU model)
+            {
+                name: 'VU+ Solo2',
+                userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) VU+solo2 STB stbapp ver: 4 rev: 9493 Safari/533.3',
+                xUserAgent: 'Model: VU+solo2; Link: WiFi',
+                deviceModel: 'VU+solo2'
+            },
+            // VU+ Ultimo (another popular VU model)
+            {
+                name: 'VU+ Ultimo',
+                userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) VU+ultimo STB stbapp ver: 4 rev: 9493 Safari/533.3',
+                xUserAgent: 'Model: VU+ultimo; Link: WiFi',
+                deviceModel: 'VU+ultimo'
+            },
+            // VU+ Duo2 (commonly supported)
+            {
+                name: 'VU+ Duo2',
+                userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) VU+duo2 STB stbapp ver: 4 rev: 9493 Safari/533.3',
+                xUserAgent: 'Model: VU+duo2; Link: WiFi',
+                deviceModel: 'VU+duo2'
+            },
+            // Original MAG250 (fallback)
+            {
+                name: 'MAG250',
+                userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
+                xUserAgent: 'Model: MAG250; Link: WiFi',
+                deviceModel: 'MAG250'
+            },
+            // MAG254 (another common STB)
+            {
+                name: 'MAG254',
+                userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 254 Safari/533.3',
+                xUserAgent: 'Model: MAG254; Link: WiFi',
+                deviceModel: 'MAG254'
+            },
+            // Generic Enigma2 (used by many VU+ boxes)
+            {
+                name: 'Enigma2',
+                userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) Enigma2 STB stbapp ver: 1 rev: 1 Safari/533.3',
+                xUserAgent: 'Model: Enigma2; Link: WiFi',
+                deviceModel: 'Enigma2'
+            }
+        ];
+    }
+
+    // Perform handshake with Stalker portal using multiple device configurations
     async performHandshake(portalUrl, macAddress) {
         const handshakeUrl = `${portalUrl}handshake`;
+        const configurations = this.getAuthConfigurations();
         
-        const headers = {
-            'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
-            'X-User-Agent': 'Model: MAG250; Link: WiFi',
-            'Cookie': `mac=${macAddress}; stb_lang=en; timezone=Europe/Kiev;`
-        };
-
-        try {
-            const response = await fetch(handshakeUrl, {
-                method: 'GET',
-                headers: headers,
-                mode: 'cors'
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            
-            if (data.js && data.js.token) {
-                return {
-                    token: data.js.token,
-                    token_expire: data.js.token_expire,
-                    profile: data.js.profile || {}
+        let lastError = null;
+        
+        // Try each configuration until one works
+        for (const config of configurations) {
+            try {
+                this.debugLog(`Attempting authentication with ${config.name}...`);
+                
+                const headers = {
+                    'User-Agent': config.userAgent,
+                    'X-User-Agent': config.xUserAgent,
+                    'Cookie': `mac=${macAddress}; stb_lang=en; timezone=Europe/Kiev;`
                 };
-            } else {
-                throw new Error('No token received from portal');
+
+                const response = await fetch(handshakeUrl, {
+                    method: 'GET',
+                    headers: headers,
+                    mode: 'cors'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.js && data.js.token) {
+                    this.debugLog(`✓ Authentication successful with ${config.name}`);
+                    return {
+                        token: data.js.token,
+                        token_expire: data.js.token_expire,
+                        profile: data.js.profile || {},
+                        deviceConfig: config
+                    };
+                } else {
+                    throw new Error('No token received from portal');
+                }
+            } catch (error) {
+                this.debugLog(`✗ Authentication failed with ${config.name}: ${error.message}`);
+                lastError = error;
+                
+                // If it's a CORS error, continue to next config
+                if (error.name === 'TypeError' && error.message.includes('CORS')) {
+                    continue;
+                }
+                // If it's a 4xx error, continue to next config
+                if (error.message.includes('HTTP 4')) {
+                    continue;
+                }
+                // For other errors, continue trying other configurations
+                continue;
             }
-        } catch (error) {
-            if (error.name === 'TypeError' && error.message.includes('CORS')) {
+        }
+        
+        // If all configurations failed, throw the last error
+        if (lastError) {
+            if (lastError.name === 'TypeError' && lastError.message.includes('CORS')) {
                 throw new Error('CORS error - Portal may not allow cross-origin requests from browser');
             }
-            throw error;
+            throw lastError;
+        } else {
+            throw new Error('Authentication failed with all device configurations');
         }
     }
 
