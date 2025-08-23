@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const portalUrlInput = document.getElementById('portalUrl');
     const macAddressInput = document.getElementById('macAddress');
     const generateMacBtn = document.getElementById('generateMacBtn');
+    const generateVuMacBtn = document.getElementById('generateVuMacBtn');
     const savedPortalsDiv = document.getElementById('savedPortals');
     const loginBtn = document.getElementById('loginBtn');
     const loginError = document.getElementById('loginError');
@@ -28,6 +29,27 @@ document.addEventListener('DOMContentLoaded', function() {
     generateMacBtn.addEventListener('click', function() {
         const generatedMAC = window.auth.generateVirtualMAC();
         macAddressInput.value = generatedMAC;
+        showSuccess('MAC address generated');
+    });
+
+    // Generate VU+ specific MAC button handler
+    generateVuMacBtn.addEventListener('click', function() {
+        // Generate a VU+ specific MAC with known prefixes
+        const vuPrefixes = ['00:1b:c5', '00:0f:ea', '00:50:c2'];
+        const chars = '0123456789abcdef';
+        const prefix = vuPrefixes[Math.floor(Math.random() * vuPrefixes.length)];
+        
+        let mac = prefix + ':';
+        for (let i = 0; i < 6; i++) {
+            if (i > 0 && i % 2 === 0) {
+                mac += ':';
+            }
+            mac += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        
+        macAddressInput.value = mac;
+        showSuccess('VU+ compatible MAC address generated');
+        logDebug(`Generated VU+ MAC with prefix ${prefix}`);
     });
 
     // Form submission handler

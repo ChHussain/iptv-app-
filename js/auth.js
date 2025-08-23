@@ -85,11 +85,24 @@ class Auth {
         return this.portals;
     }
 
-    // Generate a virtual MAC address
+    // Generate a virtual MAC address with VU+ compatibility
     generateVirtualMAC() {
         const chars = '0123456789ABCDEF';
-        let mac = '00:1A:79:'; // Common prefix for virtual MACs
         
+        // VU+ and STB compatible MAC prefixes
+        const macPrefixes = [
+            '00:1A:79', // Common virtual MAC prefix
+            '00:1B:C5', // VU+ compatible prefix  
+            '00:0F:EA', // Another VU+ prefix
+            '00:50:C2', // STB compatible prefix
+            '00:09:34', // Alternative STB prefix
+        ];
+        
+        // Choose a random prefix for better compatibility
+        const prefix = macPrefixes[Math.floor(Math.random() * macPrefixes.length)];
+        let mac = prefix + ':';
+        
+        // Generate the remaining 3 octets
         for (let i = 0; i < 6; i++) {
             if (i > 0 && i % 2 === 0) {
                 mac += ':';
@@ -97,7 +110,7 @@ class Auth {
             mac += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         
-        return mac;
+        return mac.toLowerCase(); // VU+ systems often prefer lowercase MACs
     }
 
     // Validate MAC address format
@@ -269,11 +282,22 @@ class Auth {
             baseUrl.replace('/stalker_portal/api/v1/', '/c/'),
             // Try direct API without stalker_portal
             baseUrl.replace('/stalker_portal/api/v1/', '/api/v1/'),
+            // Try portal/ endpoint (some VU+ compatible portals)
+            baseUrl.replace('/stalker_portal/api/v1/', '/portal/'),
+            // Try api/ endpoint only
+            baseUrl.replace('/stalker_portal/api/v1/', '/api/'),
+            // Try with server_api.php (some old portals)
+            baseUrl.replace('/stalker_portal/api/v1/', '/server_api.php'),
+            // Try without any API path (direct portal)
+            baseUrl.replace('/stalker_portal/api/v1/', '/'),
         ];
+        
+        // Remove duplicates while preserving order
+        const uniqueUrls = [...new Set(urlVariations)];
         
         let lastError = null;
         
-        for (const portalUrl of urlVariations) {
+        for (const portalUrl of uniqueUrls) {
             try {
                 this.debugLog(`Trying portal URL: ${portalUrl}`);
                 const result = await this.performHandshake(portalUrl, macAddress);
@@ -318,6 +342,20 @@ class Auth {
                 xUserAgent: 'Model: VU+solo2; Link: WiFi',
                 deviceModel: 'VU+solo2'
             },
+            // VU+ Ultimo (another popular VU model)
+            {
+                name: 'VU+ Ultimo',
+                userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) VU+ultimo STB stbapp ver: 4 rev: 9493 Safari/533.3',
+                xUserAgent: 'Model: VU+ultimo; Link: WiFi',
+                deviceModel: 'VU+ultimo'
+            },
+            // VU+ Duo2 (commonly supported)
+            {
+                name: 'VU+ Duo2',
+                userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) VU+duo2 STB stbapp ver: 4 rev: 9493 Safari/533.3',
+                xUserAgent: 'Model: VU+duo2; Link: WiFi',
+                deviceModel: 'VU+duo2'
+            },
             // Original MAG250 (fallback)
             {
                 name: 'MAG250',
@@ -331,6 +369,13 @@ class Auth {
                 userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 254 Safari/533.3',
                 xUserAgent: 'Model: MAG254; Link: WiFi',
                 deviceModel: 'MAG254'
+            },
+            // Generic Enigma2 (used by many VU+ boxes)
+            {
+                name: 'Enigma2',
+                userAgent: 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) Enigma2 STB stbapp ver: 1 rev: 1 Safari/533.3',
+                xUserAgent: 'Model: Enigma2; Link: WiFi',
+                deviceModel: 'Enigma2'
             }
         ];
     }
