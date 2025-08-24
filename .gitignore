@@ -9,6 +9,12 @@ yarn-error.log*
 *.temp
 test.js
 
+# Build directories
+webos-build/
+dist/
+build/
+coverage/
+
 # IDE files
 .vscode/
 .idea/
@@ -31,11 +37,9 @@ Thumbs.db
 .env.test.local
 .env.production.local
 
-# Build outputs (if any build process is added later)
-dist/
-build/
-coverage/
-
 # Logs
 logs
 *.log
+
+# Test and development files
+test-auth-improvements.js
