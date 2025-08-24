@@ -276,6 +276,39 @@ document.addEventListener('DOMContentLoaded', function() {
         
         portalGroup.appendChild(portalLabel);
         portalGroup.appendChild(portalButtonContainer);
+
+        // Add demo mode button
+        const demoModeContainer = document.createElement('div');
+        demoModeContainer.style.marginTop = '15px';
+        demoModeContainer.style.textAlign = 'center';
+        
+        const demoBtn = document.createElement('button');
+        demoBtn.type = 'button';
+        demoBtn.textContent = '🎭 Try Demo Mode';
+        demoBtn.style.padding = '10px 20px';
+        demoBtn.style.backgroundColor = '#FF9800';
+        demoBtn.style.color = 'white';
+        demoBtn.style.border = 'none';
+        demoBtn.style.borderRadius = '5px';
+        demoBtn.style.cursor = 'pointer';
+        demoBtn.style.fontSize = '14px';
+        demoBtn.style.fontWeight = 'bold';
+        demoBtn.addEventListener('click', function() {
+            if (confirm('Open Demo Mode?\n\nThis will demonstrate how the app works with the specified MAC address (AA:7A:10:57:C1:00) and portal compatibility, showing channel lists and Smart STB behavior without needing real portal access.')) {
+                window.location.href = 'demo-mode.html';
+            }
+        });
+        
+        const demoLabel = document.createElement('div');
+        demoLabel.textContent = 'Experience Smart STB functionality with simulated content';
+        demoLabel.style.fontSize = '11px';
+        demoLabel.style.color = '#666';
+        demoLabel.style.marginBottom = '8px';
+        
+        demoModeContainer.appendChild(demoLabel);
+        demoModeContainer.appendChild(demoBtn);
+        
+        portalGroup.appendChild(demoModeContainer);
     }
 
     // Show MAC address suggestions

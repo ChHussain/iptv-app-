@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Demo Mode</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="top-bar">
+            <div class="logo">
+                <h2>IPTV Portal - Demo Mode</h2>
+            </div>
+            <div class="user-info">
+                <span id="portalInfo">Portal: Demo Server | MAC: AA:7A:10:57:C1:00</span>
+                <button id="settingsBtn" class="btn-icon">⚙️</button>
+                <button id="backToLoginBtn" class="btn-icon">🔙</button>
+            </div>
+        </header>
+
+        <nav class="main-nav">
+            <button class="nav-btn active" data-section="channels">📺 Live TV</button>
+            <button class="nav-btn" data-section="movies">🎬 Movies</button>
+            <button class="nav-btn" data-section="series">📺 Series</button>
+            <button class="nav-btn" data-section="favorites">⭐ Favorites</button>
+            <button class="nav-btn" id="epgBtn">📋 EPG Guide</button>
+        </nav>
+
+        <main class="content">
+            <div id="loadingContent" class="loading" style="display: none;">Loading content...</div>
+            <div id="errorContent" class="error-message" style="display: none;"></div>
+            
+            <section id="channels" class="content-section active">
+                <h3>Live TV Channels</h3>
+                <p style="margin-bottom: 20px; color: #666;">Demo showing how channel list appears first, then users can play specific channels (Smart STB behavior)</p>
+                <div id="channelsList" class="content-grid">
+                    <!-- Demo channels will be populated here -->
+                </div>
+            </section>
+
+            <section id="movies" class="content-section">
+                <h3>Movies</h3>
+                <div id="moviesList" class="content-grid">
+                    <!-- Demo movies will be populated here -->
+                </div>
+            </section>
+
+            <section id="series" class="content-section">
+                <h3>TV Series</h3>
+                <div id="seriesList" class="content-grid">
+                    <!-- Demo series will be populated here -->
+                </div>
+            </section>
+
+            <section id="favorites" class="content-section">
+                <h3>My Favorites</h3>
+                <div class="favorites-tabs">
+                    <button class="fav-tab-btn active" data-fav-type="all">All</button>
+                    <button class="fav-tab-btn" data-fav-type="channels">Channels</button>
+                    <button class="fav-tab-btn" data-fav-type="movies">Movies</button>
+                    <button class="fav-tab-btn" data-fav-type="series">Series</button>
+                </div>
+                <div id="favoritesList" class="content-grid"></div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Demo data that simulates what real portals would return
+        const demoData = {
+            channels: [
+                { id: '1', name: 'CNN International', genre: 'News', logo: '', stream_url: 'demo://cnn-stream' },
+                { id: '2', name: 'BBC World News', genre: 'News', logo: '', stream_url: 'demo://bbc-stream' },
+                { id: '3', name: 'Discovery Channel', genre: 'Documentary', logo: '', stream_url: 'demo://discovery-stream' },
+                { id: '4', name: 'National Geographic', genre: 'Documentary', logo: '', stream_url: 'demo://natgeo-stream' },
+                { id: '5', name: 'ESPN', genre: 'Sports', logo: '', stream_url: 'demo://espn-stream' },
+                { id: '6', name: 'Fox Sports', genre: 'Sports', logo: '', stream_url: 'demo://foxsports-stream' },
+                { id: '7', name: 'MTV', genre: 'Music', logo: '', stream_url: 'demo://mtv-stream' },
+                { id: '8', name: 'Comedy Central', genre: 'Entertainment', logo: '', stream_url: 'demo://comedy-stream' },
+                { id: '9', name: 'Animal Planet', genre: 'Documentary', logo: '', stream_url: 'demo://animal-stream' },
+                { id: '10', name: 'History Channel', genre: 'Documentary', logo: '', stream_url: 'demo://history-stream' },
+                { id: '11', name: 'Cartoon Network', genre: 'Kids', logo: '', stream_url: 'demo://cartoon-stream' },
+                { id: '12', name: 'HBO', genre: 'Premium', logo: '', stream_url: 'demo://hbo-stream' }
+            ],
+            movies: [
+                { id: 'm1', name: 'The Matrix', genre: 'Sci-Fi', year: '1999', stream_url: 'demo://matrix-movie' },
+                { id: 'm2', name: 'Inception', genre: 'Thriller', year: '2010', stream_url: 'demo://inception-movie' },
+                { id: 'm3', name: 'The Dark Knight', genre: 'Action', year: '2008', stream_url: 'demo://batman-movie' },
+                { id: 'm4', name: 'Avatar', genre: 'Sci-Fi', year: '2009', stream_url: 'demo://avatar-movie' },
+                { id: 'm5', name: 'Titanic', genre: 'Romance', year: '1997', stream_url: 'demo://titanic-movie' },
+                { id: 'm6', name: 'The Avengers', genre: 'Action', year: '2012', stream_url: 'demo://avengers-movie' }
+            ],
+            series: [
+                { id: 's1', name: 'Game of Thrones', genre: 'Fantasy', year: '2011', stream_url: 'demo://got-series' },
+                { id: 's2', name: 'Breaking Bad', genre: 'Drama', year: '2008', stream_url: 'demo://bb-series' },
+                { id: 's3', name: 'The Office', genre: 'Comedy', year: '2005', stream_url: 'demo://office-series' },
+                { id: 's4', name: 'Stranger Things', genre: 'Sci-Fi', year: '2016', stream_url: 'demo://st-series' },
+                { id: 's5', name: 'Friends', genre: 'Comedy', year: '1994', stream_url: 'demo://friends-series' },
+                { id: 's6', name: 'The Crown', genre: 'Drama', year: '2016', stream_url: 'demo://crown-series' }
+            ]
+        };
+
+        // Initialize demo mode
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎭 DEMO MODE: Simulating Smart STB behavior');
+            console.log('MAC Address: AA:7A:10:57:C1:00');
+            console.log('Portal: Demo Server (compatible with real portals)');
+            
+            // Set up navigation
+            setupNavigation();
+            
+            // Load initial content (channels first - Smart STB behavior)
+            loadChannels();
+            
+            // Setup back button
+            document.getElementById('backToLoginBtn').addEventListener('click', function() {
+                window.location.href = 'index.html';
+            });
+        });
+
+        function setupNavigation() {
+            const navButtons = document.querySelectorAll('.nav-btn[data-section]');
+            const sections = document.querySelectorAll('.content-section');
+
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const sectionName = this.dataset.section;
+                    
+                    // Update active states
+                    navButtons.forEach(b => b.classList.remove('active'));
+                    sections.forEach(s => s.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    document.getElementById(sectionName).classList.add('active');
+                    
+                    // Load content for section
+                    switch(sectionName) {
+                        case 'channels':
+                            loadChannels();
+                            break;
+                        case 'movies':
+                            loadMovies();
+                            break;
+                        case 'series':
+                            loadSeries();
+                            break;
+                        case 'favorites':
+                            loadFavorites();
+                            break;
+                    }
+                });
+            });
+
+            // EPG button
+            document.getElementById('epgBtn').addEventListener('click', function() {
+                alert('EPG functionality would open here. In real deployment, this would show the Electronic Program Guide with current and upcoming programs for all channels.');
+            });
+        }
+
+        function loadChannels() {
+            console.log('📺 Loading channel list (Smart STB behavior: channels display first)');
+            const container = document.getElementById('channelsList');
+            container.innerHTML = '';
+
+            demoData.channels.forEach(channel => {
+                const channelElement = createContentItem(channel, 'channel');
+                container.appendChild(channelElement);
+            });
+
+            console.log(`✅ Loaded ${demoData.channels.length} channels`);
+        }
+
+        function loadMovies() {
+            console.log('🎬 Loading movies');
+            const container = document.getElementById('moviesList');
+            container.innerHTML = '';
+
+            demoData.movies.forEach(movie => {
+                const movieElement = createContentItem(movie, 'movie');
+                container.appendChild(movieElement);
+            });
+
+            console.log(`✅ Loaded ${demoData.movies.length} movies`);
+        }
+
+        function loadSeries() {
+            console.log('📺 Loading series');
+            const container = document.getElementById('seriesList');
+            container.innerHTML = '';
+
+            demoData.series.forEach(series => {
+                const seriesElement = createContentItem(series, 'series');
+                container.appendChild(seriesElement);
+            });
+
+            console.log(`✅ Loaded ${demoData.series.length} series`);
+        }
+
+        function loadFavorites() {
+            console.log('⭐ Loading favorites');
+            const container = document.getElementById('favoritesList');
+            container.innerHTML = '<p style="text-align: center; color: #666; margin: 40px;">No favorites saved yet. Click the ⭐ button on any content to add it to favorites.</p>';
+        }
+
+        function createContentItem(item, type) {
+            const div = document.createElement('div');
+            div.className = 'content-item';
+            
+            const icon = type === 'channel' ? '📺' : type === 'movie' ? '🎬' : '📺';
+            const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+            
+            div.innerHTML = `
+                <div class="content-poster">
+                    <div class="content-icon">${icon}</div>
+                </div>
+                <div class="content-info">
+                    <h4>${item.name}</h4>
+                    <p class="content-genre">${item.genre}</p>
+                    <p class="content-type">${typeLabel}</p>
+                    ${item.year ? `<p class="content-year">${item.year}</p>` : ''}
+                </div>
+                <div class="content-actions">
+                    <button class="btn-play" onclick="playContent('${item.id}', '${type}', '${item.name}')">▶️ Play</button>
+                    <button class="btn-favorite" onclick="addToFavorites('${item.id}', '${type}')">⭐</button>
+                </div>
+            `;
+            
+            return div;
+        }
+
+        function playContent(id, type, name) {
+            console.log(`🎥 Playing ${type}: ${name} (ID: ${id})`);
+            console.log('📡 Smart STB behavior: Content loads and is playable');
+            
+            // Simulate the player behavior
+            const playerInfo = `
+Demo Player Information:
+- Content: ${name}
+- Type: ${type}
+- MAC Address: AA:7A:10:57:C1:00
+- Stream Format: HLS/DASH (auto-detected)
+- Smart STB Compatibility: ✅ Enabled
+
+In real deployment:
+✅ Content would stream from portal servers
+✅ Multiple formats supported (HLS .m3u8, DASH .mpd, MP4)
+✅ webOS native player integration
+✅ HTML5 video fallback
+✅ Full remote control support
+✅ EPG integration for live channels
+
+This demonstrates the exact behavior users would experience with real portals.
+            `;
+            
+            alert(playerInfo);
+            
+            // In real app, this would navigate to player.html with content parameters
+            console.log(`Would navigate to: player.html?type=${type}&id=${id}&name=${encodeURIComponent(name)}`);
+        }
+
+        function addToFavorites(id, type) {
+            console.log(`⭐ Adding ${type} ${id} to favorites`);
+            alert(`Added to favorites! In real deployment, this would be saved to portal preferences.`);
+        }
+    </script>
+
+    <style>
+        .content-item {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-height: 200px;
+            transition: transform 0.2s;
+        }
+
+        .content-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .content-poster {
+            width: 80px;
+            height: 80px;
+            background: #ddd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .content-icon {
+            font-size: 32px;
+        }
+
+        .content-info h4 {
+            margin: 5px 0;
+            color: #333;
+        }
+
+        .content-genre, .content-type, .content-year {
+            margin: 2px 0;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .content-actions {
+            margin-top: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-play, .btn-favorite {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-play {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-play:hover {
+            background: #45a049;
+        }
+
+        .btn-favorite {
+            background: #ffd700;
+            color: #333;
+        }
+
+        .btn-favorite:hover {
+            background: #ffed4a;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+        }
+    </style>
+</body>
+</html>
