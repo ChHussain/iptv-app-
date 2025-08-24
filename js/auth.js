@@ -133,14 +133,16 @@ class Auth {
         
         // Try multiple common Stalker portal endpoint patterns
         const handshakeEndpoints = [
-            'stalker_portal/api/v1/handshake',  // Standard v1 API
-            'stalker_portal/api/handshake',     // API without version
-            'stalker_portal/handshake',         // Direct portal handshake
-            'portal.php?action=handshake',      // PHP-based portal
-            'server/load.php?action=handshake', // Alternative PHP portal
-            'api/v1/handshake',                 // Direct API v1
-            'api/handshake',                    // Direct API
-            'handshake'                         // Minimal endpoint
+            'stalker_portal/api/v1/handshake',     // Standard v1 API
+            'stalker_portal/api/handshake',        // API without version
+            'stalker_portal/handshake',            // Direct portal handshake
+            'stalker_portal/server/load.php',     // Standard PHP endpoint
+            'server/load.php',                     // Alternative PHP portal
+            'portal.php',                          // PHP-based portal
+            'api/v1/handshake',                    // Direct API v1
+            'api/handshake',                       // Direct API
+            'c/index.html',                        // Some portals use this
+            'handshake'                            // Minimal endpoint
         ];
         
         for (let i = 0; i < handshakeEndpoints.length; i++) {
@@ -313,7 +315,17 @@ This portal may require:
             'X-Requested-With': 'XMLHttpRequest'
         };
 
-        const response = await fetch(handshakeUrl, {
+        // Add necessary query parameters for Stalker portal handshake
+        const url = new URL(handshakeUrl);
+        url.searchParams.set('type', 'stb');
+        url.searchParams.set('action', 'handshake');
+        url.searchParams.set('mac', macAddress);
+        url.searchParams.set('stb_lang', 'en');
+        url.searchParams.set('timezone', 'Europe/Kiev');
+        
+        console.log('Making handshake request to:', url.toString());
+
+        const response = await fetch(url.toString(), {
             method: 'GET',
             headers: headers,
             mode: 'cors',
@@ -326,6 +338,21 @@ This portal may require:
 
         const data = await response.json();
         
+        // Check for portal-specific error messages first
+        if (data.js && data.js.msg) {
+            throw new Error(`Portal Error: ${data.js.msg}`);
+        }
+        
+        // Check for generic error in response
+        if (data.error) {
+            throw new Error(`Portal Error: ${data.error}`);
+        }
+        
+        // Check for message field
+        if (data.msg) {
+            throw new Error(`Portal Error: ${data.msg}`);
+        }
+        
         if (data.js && data.js.token) {
             return {
                 token: data.js.token,
@@ -333,7 +360,9 @@ This portal may require:
                 profile: data.js.profile || {}
             };
         } else {
-            throw new Error('No token received from portal');
+            // Provide more detailed error information
+            console.log('Portal response:', JSON.stringify(data, null, 2));
+            throw new Error('No token received from portal. Response: ' + JSON.stringify(data));
         }
     }
 
@@ -357,6 +386,25 @@ This portal may require:
 
             window[callbackName] = (data) => {
                 cleanup();
+                
+                // Check for portal-specific error messages first
+                if (data.js && data.js.msg) {
+                    reject(new Error(`Portal Error: ${data.js.msg}`));
+                    return;
+                }
+                
+                // Check for generic error in response
+                if (data.error) {
+                    reject(new Error(`Portal Error: ${data.error}`));
+                    return;
+                }
+                
+                // Check for message field
+                if (data.msg) {
+                    reject(new Error(`Portal Error: ${data.msg}`));
+                    return;
+                }
+                
                 if (data.js && data.js.token) {
                     resolve({
                         token: data.js.token,
@@ -364,7 +412,8 @@ This portal may require:
                         profile: data.js.profile || {}
                     });
                 } else {
-                    reject(new Error('No token received from portal via JSONP'));
+                    console.log('Portal JSONP response:', JSON.stringify(data, null, 2));
+                    reject(new Error('No token received from portal via JSONP. Response: ' + JSON.stringify(data)));
                 }
             };
 
