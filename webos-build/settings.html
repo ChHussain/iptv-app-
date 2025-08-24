@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Settings</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="settings-container">
+        <header class="settings-header">
+            <button id="backBtn" class="btn-back">← Back to Home</button>
+            <h2>Settings</h2>
+        </header>
+
+        <div class="settings-content">
+            <div class="settings-section">
+                <h3>Connection Information</h3>
+                <div class="settings-item">
+                    <label>Portal URL:</label>
+                    <span id="currentPortalUrl"></span>
+                </div>
+                <div class="settings-item">
+                    <label>MAC Address:</label>
+                    <span id="currentMacAddress"></span>
+                </div>
+                <div class="settings-item">
+                    <label>Connection Status:</label>
+                    <span id="connectionStatus">Connected</span>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>Player Settings</h3>
+                <div class="settings-item">
+                    <label for="autoplay">Autoplay:</label>
+                    <input type="checkbox" id="autoplay" checked>
+                </div>
+                <div class="settings-item">
+                    <label for="volume">Default Volume:</label>
+                    <input type="range" id="volume" min="0" max="100" value="80">
+                    <span id="volumeValue">80%</span>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>Appearance</h3>
+                <div class="settings-item">
+                    <label for="theme">Theme:</label>
+                    <select id="theme">
+                        <option value="dark">Dark Theme</option>
+                        <option value="light">Light Theme</option>
+                    </select>
+                </div>
+                <div class="settings-item">
+                    <label for="debugMode">Developer Mode:</label>
+                    <input type="checkbox" id="debugMode">
+                    <small>Enable debug logging and diagnostics panel (Info key)</small>
+                </div>
+            </div>
+
+            <div class="settings-actions">
+                <button id="testConnectionBtn" class="btn-primary">Test Connection</button>
+                <button id="clearCacheBtn" class="btn-secondary">Clear Cache</button>
+                <button id="logoutBtn" class="btn-danger">Logout</button>
+            </div>
+
+            <div id="testResult" class="test-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/webrtc-portal.js"></script>
+    <script src="js/diagnostics.js"></script>
+    <script src="js/theme-manager.js"></script>
+    <script src="js/api.js"></script>
+    <!-- <script src="js/portal-manager.js"></script> -->
+    <script src="js/settings.js"></script>
+</body>
+</html>
