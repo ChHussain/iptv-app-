@@ -5,6 +5,48 @@ class Auth {
         this.session = this.loadSession();
     }
 
+    // Check internet connectivity
+    async checkInternetConnectivity() {
+        // Check navigator.onLine first (basic check)
+        if (!navigator.onLine) {
+            return false;
+        }
+
+        // Try to reach a reliable endpoint to verify actual connectivity
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            const response = await fetch('https://www.google.com/favicon.ico', {
+                method: 'HEAD',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            return true;
+        } catch (error) {
+            // If Google is not accessible, try alternative endpoints
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                await fetch('https://dns.google/favicon.ico', {
+                    method: 'HEAD',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                return true;
+            } catch (secondError) {
+                return false;
+            }
+        }
+    }
+
     // Load session from localStorage
     loadSession() {
         try {
@@ -45,6 +87,12 @@ class Auth {
     // Login with portal URL and MAC address
     async login(portalUrl, macAddress) {
         try {
+            // Check internet connectivity first
+            const isOnline = await this.checkInternetConnectivity();
+            if (!isOnline) {
+                throw new Error('INTERNET_REQUIRED');
+            }
+
             // Normalize portal URL
             const normalizedUrl = this.normalizePortalUrl(portalUrl);
             

@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadingContent = document.getElementById('loadingContent');
     const errorContent = document.getElementById('errorContent');
 
+    // Check connectivity on page load
+    checkConnectivityStatus();
+
     // Initialize page
     initializePage();
     loadContent('channels');
@@ -345,4 +348,32 @@ document.addEventListener('DOMContentLoaded', function() {
     function hideError() {
         errorContent.style.display = 'none';
     }
+
+    // Check connectivity status
+    async function checkConnectivityStatus() {
+        if (!navigator.onLine) {
+            showError('No internet connection. Some features may not work properly.');
+            return;
+        }
+
+        try {
+            const isOnline = await window.auth.checkInternetConnectivity();
+            if (!isOnline) {
+                showError('Limited internet connectivity detected. Some features may not work properly.');
+            }
+        } catch (error) {
+            console.warn('Connectivity check failed:', error);
+        }
+    }
+
+    // Listen for connectivity changes
+    window.addEventListener('online', function() {
+        hideError();
+        console.log('Internet connection restored');
+    });
+
+    window.addEventListener('offline', function() {
+        showError('Internet connection lost. This app requires an internet connection to work properly.');
+        console.log('Internet connection lost');
+    });
 });
