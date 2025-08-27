@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // Check internet connectivity on page load
+    checkInitialConnectivity();
+
     // Load saved values
     loadSavedValues();
 
@@ -64,7 +67,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Login error:', error);
-            showError('Connection failed. Please check your internet connection and try again.');
+            
+            // Handle specific internet connectivity error
+            if (error.message === 'INTERNET_REQUIRED') {
+                showError('This app requires an internet connection to work. Please check your network connection and try again.');
+            } else {
+                showError('Connection failed. Please check your internet connection and try again.');
+            }
         } finally {
             showLoading(false);
         }
@@ -91,6 +100,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
             e.target.value = 'http://' + url;
         }
+    });
+
+    // Listen for online/offline events
+    window.addEventListener('online', function() {
+        hideError();
+        loginBtn.disabled = false;
+        console.log('Internet connection restored');
+    });
+
+    window.addEventListener('offline', function() {
+        showError('Internet connection lost. This app requires an internet connection to work.');
+        loginBtn.disabled = true;
+        console.log('Internet connection lost');
     });
 
     function showError(message) {
@@ -156,6 +178,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Error loading saved values:', error);
+        }
+    }
+
+    // Check internet connectivity on page load
+    async function checkInitialConnectivity() {
+        if (!navigator.onLine) {
+            showError('No internet connection detected. This app requires an internet connection to work.');
+            loginBtn.disabled = true;
+            return;
+        }
+
+        // Perform a more thorough connectivity check
+        try {
+            const isOnline = await window.auth.checkInternetConnectivity();
+            if (!isOnline) {
+                showError('Unable to connect to the internet. This app requires an internet connection to work.');
+                loginBtn.disabled = true;
+            }
+        } catch (error) {
+            // If connectivity check fails, we'll let the user try anyway
+            // as the error might be temporary or due to specific network configurations
+            console.warn('Initial connectivity check failed:', error);
         }
     }
 
